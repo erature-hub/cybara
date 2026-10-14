@@ -106,10 +106,10 @@ const persistedSessionMessageStatement = db.prepare(
   "SELECT id, role, content, created_at, agent_id, metadata FROM session_messages WHERE session_id = ? AND id = ?"
 );
 const nextSessionMessageOrdinalStatement = db.prepare(
-  "SELECT COALESCE(MAX(ordinal), 0) + 1 AS next_ordinal FROM session_messages WHERE session_id = ?"
+  "SELECT COALESCE(MAX(COALESCE(ordinal, rowid)), 0) + 1 AS next_ordinal FROM session_messages WHERE session_id = ?"
 );
 const sessionMessageOrdinalsStatement = db.prepare(
-  "SELECT id, ordinal FROM session_messages WHERE session_id = ?"
+  "SELECT id, COALESCE(ordinal, rowid) AS ordinal FROM session_messages WHERE session_id = ?"
 );
 const setSessionMessageOrdinalStatement = db.prepare(
   "UPDATE session_messages SET ordinal = ? WHERE id = ? AND session_id = ?"
@@ -250,13 +250,24 @@ export function syncPersistedSessionMessageOrder(
     ordinal: number | null;
   }>;
   if (rows.length === 0) return 0;
-  const currentOrdinals = new Map(rows.map((row) => [row.id, row.ordinal]));
+  const currentOrdinals = new Map(rows.map((row) => [row.id, row.ordinal ?? 0]));
+  const liveIds: string[] = [];
+  const seen = new Set<string>();
+  for (const message of messages) {
+    const id = message.message_id;
+    if (typeof id !== "string" || !id || seen.has(id) || !currentOrdinals.has(id)) continue;
+    seen.add(id);
+    liveIds.push(id);
+  }
+  const slots = liveIds.map((id) => currentOrdinals.get(id) ?? 0).sort((a, b) => a - b);
+  for (let index = 1; index < slots.length; index += 1) {
+    const previous = slots[index - 1] ?? 0;
+    if ((slots[index] ?? 0) <= previous) slots[index] = previous + 1;
+  }
   let updated = 0;
   db.transaction(() => {
-    messages.forEach((message, index) => {
-      const id = message.message_id;
-      if (typeof id !== "string" || !id) return;
-      const desired = index + 1;
+    liveIds.forEach((id, index) => {
+      const desired = slots[index] ?? 0;
       if (currentOrdinals.get(id) === desired) return;
       setSessionMessageOrdinalStatement.run(desired, id, sessionId);
       updated += 1;

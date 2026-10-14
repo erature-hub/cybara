@@ -12,6 +12,7 @@ import {
   type PendingChatItem,
 } from "../../src/api/chat-runtime-state";
 import type { ChatMessage } from "../../src/api/chat-types";
+import db from "../../src/core/database";
 
 function makeSession(id: string): InMemoryChatSession {
   return {
@@ -234,6 +235,74 @@ describe("persisted chat message order", () => {
     const loaded = deferred?.messages ?? [];
     expect(loaded.at(-1)?.content).toBe("message 1");
     expect(loaded.at(-1)?.thinking).toBe("oldest reasoning that moves to the end");
+  });
+
+  test("rows written without an ordinal by an older gateway do not displace new messages", async () => {
+    const sessionId = `order-upgrade-${crypto.randomUUID()}`;
+    const session = makeSession(sessionId);
+    const add = async (content: string, role: "user" | "assistant", key: string) => {
+      const message: ChatMessage = { role, content, timestamp: new Date().toISOString() };
+      session.messages.push(message);
+      await upsertPersistedSessionMessage(session.id, session.agentId, message, { stableKey: key });
+      return message;
+    };
+    await add("early question", "user", "u1");
+    await add("early answer", "assistant", "a1");
+    const legacy = await add("legacy question", "user", "u2");
+    await add("legacy answer", "assistant", "a2");
+    db.query(
+      "UPDATE session_messages SET ordinal = NULL WHERE session_id = ? AND id IN (?, ?)"
+    ).run(sessionId, legacy.message_id ?? "", session.messages.at(-1)?.message_id ?? "");
+    db.query("UPDATE session_messages SET ordinal = 1 WHERE session_id = ? AND id = ?").run(
+      sessionId,
+      session.messages[0]?.message_id ?? ""
+    );
+    db.query("UPDATE session_messages SET ordinal = 2 WHERE session_id = ? AND id = ?").run(
+      sessionId,
+      session.messages[1]?.message_id ?? ""
+    );
+
+    await add("new question", "user", "u3");
+    const loaded = await loadPersistedSession(sessionId);
+    expect((loaded?.messages ?? []).map((m) => m.content)).toEqual([
+      "early question",
+      "early answer",
+      "legacy question",
+      "legacy answer",
+      "new question",
+    ]);
+  });
+
+  test("syncing a partial live window keeps rows outside it in place", async () => {
+    const sessionId = `order-window-${crypto.randomUUID()}`;
+    const session = makeSession(sessionId);
+    const all: ChatMessage[] = [];
+    for (let index = 0; index < 6; index += 1) {
+      const message: ChatMessage = {
+        role: index % 2 === 0 ? "user" : "assistant",
+        content: `m${index}`,
+        timestamp: new Date(1_795_000_000_000 + index * 1000).toISOString(),
+      };
+      all.push(message);
+      await upsertPersistedSessionMessage(session.id, session.agentId, message, {
+        stableKey: `w${index}`,
+      });
+    }
+    const window = all.slice(3);
+    const [m3, m4, m5] = window;
+    if (!m3 || !m4 || !m5) throw new Error("fixture window missing");
+    session.messages = [m3, m5, m4];
+    await persistChatSessionSnapshot(session);
+
+    const loaded = await loadPersistedSession(sessionId);
+    expect((loaded?.messages ?? []).map((m) => m.content)).toEqual([
+      "m0",
+      "m1",
+      "m2",
+      "m3",
+      "m5",
+      "m4",
+    ]);
   });
 
   test("reordering writes only the rows whose position changed", async () => {

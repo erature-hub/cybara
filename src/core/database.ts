@@ -489,8 +489,11 @@ try {
 
   try {
     db.exec("ALTER TABLE session_messages ADD COLUMN ordinal INTEGER");
-    db.exec("UPDATE session_messages SET ordinal = rowid WHERE ordinal IS NULL");
     console.error("[Database] Migration: Added logical ordinal to session_messages");
+  } catch {}
+
+  try {
+    db.exec("UPDATE session_messages SET ordinal = rowid WHERE ordinal IS NULL");
   } catch {}
 
   try {
