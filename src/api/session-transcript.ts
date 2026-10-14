@@ -64,19 +64,23 @@ function mergePersistedFirst(
   activeMessages: ChatMessage[],
   preservePersistedMetadata = false
 ): ChatMessage[] {
+  const conversational = activeMessages.filter(
+    (message) => message.role === "user" || message.role === "assistant"
+  );
   const activeByIdentity = new Map<string, ChatMessage[]>();
-  for (const message of activeMessages) {
-    if (message.role !== "user" && message.role !== "assistant") continue;
+  for (const message of conversational) {
     const identity = messageIdentity(message);
     const matches = activeByIdentity.get(identity) || [];
     matches.push(message);
     activeByIdentity.set(identity, matches);
   }
 
-  const merged = persistedMessages.map((persisted) => {
+  const mergedIndexByActive = new Map<ChatMessage, number>();
+  const merged = persistedMessages.map((persisted, index) => {
     const matches = activeByIdentity.get(messageIdentity(persisted));
     const active = matches?.shift();
     if (!active) return persisted;
+    mergedIndexByActive.set(active, index);
     if (preservePersistedMetadata) {
       const merged = {
         ...active,
@@ -99,11 +103,33 @@ function mergePersistedFirst(
     };
   });
 
-  for (const matches of activeByIdentity.values()) {
-    merged.push(...matches);
-  }
+  return placeUnmatchedActiveMessages(merged, conversational, mergedIndexByActive);
+}
 
-  return merged;
+function placeUnmatchedActiveMessages(
+  merged: ChatMessage[],
+  conversational: ChatMessage[],
+  mergedIndexByActive: Map<ChatMessage, number>
+): ChatMessage[] {
+  const insertionsAfter = new Map<number, ChatMessage[]>();
+  let anchor = -1;
+  for (const message of conversational) {
+    const matchedIndex = mergedIndexByActive.get(message);
+    if (matchedIndex !== undefined) {
+      anchor = Math.max(anchor, matchedIndex);
+      continue;
+    }
+    const pending = insertionsAfter.get(anchor) || [];
+    pending.push(message);
+    insertionsAfter.set(anchor, pending);
+  }
+  if (insertionsAfter.size === 0) return merged;
+
+  const placed: ChatMessage[] = [...(insertionsAfter.get(-1) || [])];
+  merged.forEach((message, index) => {
+    placed.push(message, ...(insertionsAfter.get(index) || []));
+  });
+  return placed;
 }
 
 function messageTimestamp(message: ChatMessage): number | null {

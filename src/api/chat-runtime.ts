@@ -446,6 +446,22 @@ export function enqueuePendingChatMessage(
   };
 }
 
+function persistAbsorbedSteeringMessage(
+  session: InMemoryChatSession,
+  pendingId: string,
+  message: ChatMessage
+): void {
+  void upsertPersistedSessionMessage(session.id, session.agentId, message, {
+    stableKey: `pending:${pendingId}`,
+    metadata: { source: "chat_steering" },
+  }).catch((error: unknown) => {
+    log.exception("Absorbed steering message could not be persisted", error, {
+      sessionId: session.id,
+      pendingId,
+    });
+  });
+}
+
 function consumeSteeringMessages(session: InMemoryChatSession): Array<{
   id: string;
   content: string;
@@ -469,6 +485,7 @@ function consumeSteeringMessages(session: InMemoryChatSession): Array<{
       materializedMessage = materializePendingMessage(session, item);
     }
     delete materializedMessage._pendingSteeringId;
+    persistAbsorbedSteeringMessage(session, item.id, materializedMessage);
     deletePersistedPendingChatItem(item.id);
   }
   syncPendingChatStatus(session.id);

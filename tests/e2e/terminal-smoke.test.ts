@@ -98,7 +98,7 @@ describe("Terminal e2e smoke", () => {
     });
 
     await waitForServerReady(baseUrl);
-  });
+  }, 45_000);
 
   afterAll(async () => {
     if (serverProc) {

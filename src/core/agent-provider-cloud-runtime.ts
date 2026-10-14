@@ -38,6 +38,7 @@ import {
   collectBedrockReasoningText,
 } from "./llm/bedrock-reasoning";
 import { googleFunctionDeclaration } from "./llm/google-tool-schema";
+import { applyBedrockPromptCache } from "./llm/bedrock-prompt-cache";
 import { toBedrockImageBlock, toGoogleImagePart } from "./llm/image-blocks";
 import { toBedrockHistory, toGoogleHistory } from "./llm/provider-history";
 import { googleThinkingConfig, normalizeReasoningEffort } from "./llm/reasoning";
@@ -470,7 +471,9 @@ export abstract class AgentProviderCloudRuntime extends AgentProviderCodexRuntim
       }
 
       const startTime = performance.now();
-      const response = await client.send(new ConverseCommand(requestPayload));
+      const response = await client.send(
+        new ConverseCommand(applyBedrockPromptCache(requestPayload))
+      );
       const durationMs = Math.round(performance.now() - startTime);
       const usage = response.usage;
       if (usage) {

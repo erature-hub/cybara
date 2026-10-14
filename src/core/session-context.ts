@@ -86,7 +86,7 @@ const compactSessionMessagesStatement = db.prepare(
          OR rowid IN (
            SELECT rowid FROM session_messages
            WHERE session_id = ?1
-           ORDER BY rowid DESC
+           ORDER BY COALESCE(ordinal, rowid) DESC, rowid DESC
            LIMIT ?3
          )
        THEN metadata
@@ -100,10 +100,19 @@ const compactSessionMessagesStatement = db.prepare(
      END AS metadata
    FROM session_messages
    WHERE session_id = ?1
-   ORDER BY rowid ASC`
+   ORDER BY COALESCE(ordinal, rowid) ASC, rowid ASC`
 );
 const persistedSessionMessageStatement = db.prepare(
   "SELECT id, role, content, created_at, agent_id, metadata FROM session_messages WHERE session_id = ? AND id = ?"
+);
+const nextSessionMessageOrdinalStatement = db.prepare(
+  "SELECT COALESCE(MAX(COALESCE(ordinal, rowid)), 0) + 1 AS next_ordinal FROM session_messages WHERE session_id = ?"
+);
+const sessionMessageOrdinalsStatement = db.prepare(
+  "SELECT id, COALESCE(ordinal, rowid) AS ordinal FROM session_messages WHERE session_id = ?"
+);
+const setSessionMessageOrdinalStatement = db.prepare(
+  "UPDATE session_messages SET ordinal = ? WHERE id = ? AND session_id = ?"
 );
 
 const RECOVERY_MESSAGE_SOURCES = new Set([
@@ -207,16 +216,64 @@ export async function upsertPersistedSessionMessage(
   ]);
   const createdAt = toSqliteTimestamp(message.timestamp, options?.createdAtOffsetMs || 0);
   const metadata = serializeSessionMessageMetadata(message, options?.metadata);
+  const ordinalRow = nextSessionMessageOrdinalStatement.get(sessionId) as
+    | { next_ordinal: number }
+    | undefined;
+  const ordinal = typeof ordinalRow?.next_ordinal === "number" ? ordinalRow.next_ordinal : 1;
   db.prepare(
-    `INSERT INTO session_messages (id, session_id, agent_id, role, content, metadata, created_at)
-     VALUES (?, ?, ?, ?, ?, ?, ?)
+    `INSERT INTO session_messages (id, session_id, agent_id, role, content, metadata, created_at, ordinal)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?)
      ON CONFLICT(id) DO UPDATE SET
        agent_id = excluded.agent_id,
        role = excluded.role,
        content = excluded.content,
        metadata = excluded.metadata`
-  ).run(id, sessionId, agentId, message.role, message.content, metadata ?? null, createdAt);
+  ).run(
+    id,
+    sessionId,
+    agentId,
+    message.role,
+    message.content,
+    metadata ?? null,
+    createdAt,
+    ordinal
+  );
   message.message_id = id;
+}
+
+export function syncPersistedSessionMessageOrder(
+  sessionId: string,
+  messages: ChatMessage[]
+): number {
+  const rows = sessionMessageOrdinalsStatement.all(sessionId) as Array<{
+    id: string;
+    ordinal: number | null;
+  }>;
+  if (rows.length === 0) return 0;
+  const currentOrdinals = new Map(rows.map((row) => [row.id, row.ordinal ?? 0]));
+  const liveIds: string[] = [];
+  const seen = new Set<string>();
+  for (const message of messages) {
+    const id = message.message_id;
+    if (typeof id !== "string" || !id || seen.has(id) || !currentOrdinals.has(id)) continue;
+    seen.add(id);
+    liveIds.push(id);
+  }
+  const slots = liveIds.map((id) => currentOrdinals.get(id) ?? 0).sort((a, b) => a - b);
+  for (let index = 1; index < slots.length; index += 1) {
+    const previous = slots[index - 1] ?? 0;
+    if ((slots[index] ?? 0) <= previous) slots[index] = previous + 1;
+  }
+  let updated = 0;
+  db.transaction(() => {
+    liveIds.forEach((id, index) => {
+      const desired = slots[index] ?? 0;
+      if (currentOrdinals.get(id) === desired) return;
+      setSessionMessageOrdinalStatement.run(desired, id, sessionId);
+      updated += 1;
+    });
+  })();
+  return updated;
 }
 
 export interface SessionModelMetadata {
