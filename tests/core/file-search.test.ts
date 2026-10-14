@@ -4,6 +4,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { handleFileSearch, handleGrep } from "../../src/core/tools/handlers/file";
 import { searchFiles } from "../../src/core/tools/file-search";
+import { envWithOnlyPath } from "../helpers/isolated-path-env";
 
 describe("file search", () => {
   test("defaults to the active chat workspace", async () => {
@@ -101,12 +102,10 @@ describe("file search", () => {
       ].join("\n");
       const result = Bun.spawnSync([process.execPath, "-e", worker], {
         cwd: directory,
-        env: {
-          ...process.env,
-          PATH: emptyPath,
+        env: envWithOnlyPath(emptyPath, {
           SEARCH_DIR: directory,
           EXTRA_FILE: join(directory, "match-3.txt"),
-        },
+        }),
         stdout: "pipe",
         stderr: "pipe",
       });

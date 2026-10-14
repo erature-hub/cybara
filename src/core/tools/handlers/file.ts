@@ -953,6 +953,10 @@ async function searchWithRipgrep(
   }
 }
 
+export function ripgrepLineText(text: unknown): string {
+  return typeof text === "string" ? text.replace(/\r?\n$/, "") : "";
+}
+
 function appendRipgrepMatch(
   results: Array<{ path: string; line: number; content: string }>,
   line: string,
@@ -982,7 +986,7 @@ function appendRipgrepMatch(
         typeof match.data?.line_number === "number" && Number.isFinite(match.data.line_number)
           ? match.data.line_number
           : 1,
-      content: typeof match.data?.lines?.text === "string" ? match.data.lines.text : "",
+      content: ripgrepLineText(match.data?.lines?.text),
     });
     return true;
   } catch {
