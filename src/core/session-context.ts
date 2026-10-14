@@ -86,7 +86,7 @@ const compactSessionMessagesStatement = db.prepare(
          OR rowid IN (
            SELECT rowid FROM session_messages
            WHERE session_id = ?1
-           ORDER BY rowid DESC
+           ORDER BY COALESCE(ordinal, rowid) DESC, rowid DESC
            LIMIT ?3
          )
        THEN metadata

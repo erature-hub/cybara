@@ -208,6 +208,34 @@ describe("persisted chat message order", () => {
     pendingChatQueues.delete(sessionId);
   });
 
+  test("a long reordered chat keeps rich metadata on its logically newest messages", async () => {
+    const sessionId = `order-rich-tail-${crypto.randomUUID()}`;
+    const session = makeSession(sessionId);
+    for (let index = 0; index < 70; index += 1) {
+      const message: ChatMessage = {
+        role: index % 2 === 0 ? "user" : "assistant",
+        content: `message ${index}`,
+        timestamp: new Date(1_790_000_000_000 + index * 1000).toISOString(),
+        ...(index === 1 ? { thinking: "oldest reasoning that moves to the end" } : {}),
+      };
+      session.messages.push(message);
+      await upsertPersistedSessionMessage(session.id, session.agentId, message, {
+        stableKey: `rich-${index}`,
+      });
+    }
+    await persistChatSessionSnapshot(session);
+
+    const moved = session.messages.splice(1, 1)[0];
+    if (!moved) throw new Error("fixture message missing");
+    session.messages.push(moved);
+    await persistChatSessionSnapshot(session, moved);
+
+    const deferred = await loadPersistedSession(sessionId, { deferHistoricalMetadata: true });
+    const loaded = deferred?.messages ?? [];
+    expect(loaded.at(-1)?.content).toBe("message 1");
+    expect(loaded.at(-1)?.thinking).toBe("oldest reasoning that moves to the end");
+  });
+
   test("reordering writes only the rows whose position changed", async () => {
     const sessionId = "order-noop-sync-fixture";
     const session = makeSession(sessionId);
