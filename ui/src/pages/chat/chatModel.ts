@@ -63,6 +63,8 @@ export interface ChatMessage {
   metadata_deferred?: boolean;
   timestamp?: string;
   worked_duration_ms?: number;
+  interrupted?: boolean;
+  stopped?: boolean;
   tool_calls?: ToolCall[];
   agent_transfers?: AgentTransferInfo[];
   process_activities?: Array<{

@@ -101,6 +101,7 @@ import {
   pendingChatSnapshot,
   pendingChatSnapshots,
   preparePendingMessage,
+  queuedMaterializedSteeringIds,
   removePendingChatMessagesBySource,
   removePendingChatQueueItem,
   resolveQueuedTurnRouting,
@@ -524,19 +525,32 @@ function finalizeInterruptedProcessActivity(
   };
 }
 
+function interruptedTurnUserIndex(session: InMemoryChatSession): number {
+  const unabsorbedSteeringIds = queuedMaterializedSteeringIds(session.id);
+  return session.messages.findLastIndex(
+    (message) =>
+      message.role === "user" &&
+      !(message._pendingSteeringId && unabsorbedSteeringIds.has(message._pendingSteeringId))
+  );
+}
+
 function materializeInterruptedAssistantTurn(
   session: InMemoryChatSession,
   kind: ChatTurnInterruptionKind
 ): ChatMessage | undefined {
-  const latestUserIndex = session.messages.findLastIndex((message) => message.role === "user");
+  const latestUserIndex = interruptedTurnUserIndex(session);
   if (latestUserIndex < 0) return undefined;
   const nextMessage = session.messages[latestUserIndex + 1];
   const existing =
     nextMessage?.role === "assistant" &&
-    nextMessage.content.trim().length === 0 &&
-    Array.isArray(nextMessage.process_activities)
+    nextMessage.interrupted === true &&
+    nextMessage.content.trim().length === 0
       ? nextMessage
-      : undefined;
+      : nextMessage?.role === "assistant" &&
+          nextMessage.content.trim().length === 0 &&
+          Array.isArray(nextMessage.process_activities)
+        ? nextMessage
+        : undefined;
   const observed = getSessionProcessActivities(session.id, {
     excludeActivityIds: collectAttachedProcessActivityIds(session.messages),
   });
@@ -544,16 +558,18 @@ function materializeInterruptedAssistantTurn(
     ...(existing?.process_activities || []),
     ...(observed || []).map((activity) => finalizeInterruptedProcessActivity(activity, kind)),
   ]);
-  if (activities.length === 0) return existing;
   const stoppedAt = Date.now();
   const statusSnapshot = getSessionRunStatusSnapshot(session.id);
   const userTimestamp = parseIsoTimestampMs(session.messages[latestUserIndex]?.timestamp);
   const startedAt = statusSnapshot?.startedAt ?? userTimestamp ?? stoppedAt;
   const toolCalls = buildInterruptedToolCalls(activities);
+  const runId = existing?.run_id || getActiveSessionRunId(session.id);
   if (existing) {
     existing.process_activities = activities;
-    existing.tool_calls = toolCalls;
+    existing.tool_calls = toolCalls?.length ? toolCalls : undefined;
     existing.interrupted = true;
+    if (kind === "stopped") existing.stopped = true;
+    if (runId) existing.run_id = runId;
     existing.worked_duration_ms = Math.max(0, stoppedAt - startedAt);
     return existing;
   }
@@ -562,8 +578,10 @@ function materializeInterruptedAssistantTurn(
     content: "",
     timestamp: new Date(Math.max(stoppedAt, (userTimestamp ?? 0) + 1)).toISOString(),
     process_activities: activities,
-    tool_calls: toolCalls,
+    ...(toolCalls?.length ? { tool_calls: toolCalls } : {}),
     interrupted: true,
+    ...(kind === "stopped" ? { stopped: true } : {}),
+    ...(runId ? { run_id: runId } : {}),
     worked_duration_ms: Math.max(0, stoppedAt - startedAt),
   };
   session.messages.splice(latestUserIndex + 1, 0, assistantMessage);
@@ -933,6 +951,13 @@ export async function steerPendingChatMessage(
       error: "Pending message not found",
       pendingMessages: pendingChatSnapshots(key),
     };
+  if (queue[index]?.mode === "queued" && queue[index]?.materialized === true) {
+    return {
+      success: false,
+      error: "This message is already running as its own turn",
+      pendingMessages: pendingChatSnapshots(key),
+    };
+  }
 
   const item: PendingChatItem = {
     ...queue[index],

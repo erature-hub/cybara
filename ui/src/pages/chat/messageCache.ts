@@ -40,6 +40,28 @@ function matchesTranscriptPosition(left: ChatMessage, right: ChatMessage): boole
   return left.role === right.role && left.content === right.content;
 }
 
+function messageIdentityKeys(message: ChatMessage): string[] {
+  const keys: string[] = [];
+  if (message.message_id) keys.push(`id\u0000${message.message_id}`);
+  if (message.timestamp) keys.push(`ts\u0000${message.role}\u0000${message.timestamp}`);
+  return keys;
+}
+
+export function appendNewMessages(
+  existing: ChatMessage[],
+  additions: ChatMessage[]
+): ChatMessage[] {
+  const seen = new Set(existing.flatMap(messageIdentityKeys));
+  const fresh: ChatMessage[] = [];
+  for (const message of additions) {
+    const keys = messageIdentityKeys(message);
+    if (keys.some((key) => seen.has(key))) continue;
+    for (const key of keys) seen.add(key);
+    fresh.push(message);
+  }
+  return fresh.length === 0 ? existing : [...existing, ...fresh];
+}
+
 function isMatchingTranscriptPrefix(reference: ChatMessage[], reloaded: ChatMessage[]): boolean {
   return (
     reloaded.length < reference.length &&
@@ -53,12 +75,20 @@ export function enrichReloadedMessages(
   options: { preserveReferenceTail?: boolean } = {}
 ): ChatMessage[] {
   if (!hasItems(reference)) return reloaded;
-  const key = (message: ChatMessage) => `${message.role}\u0000${message.timestamp || ""}`;
   const byKey = new Map<string, ChatMessage>();
-  for (const message of reference) byKey.set(key(message), message);
+  for (const message of reference) {
+    for (const key of messageIdentityKeys(message)) {
+      if (!byKey.has(key)) byKey.set(key, message);
+    }
+  }
 
   const enriched = reloaded.map((message, index) => {
-    const existing = byKey.get(key(message)) ?? reference[index];
+    const positional = reference[index];
+    const existing =
+      messageIdentityKeys(message)
+        .map((key) => byKey.get(key))
+        .find((candidate) => candidate !== undefined) ??
+      (positional && matchesTranscriptPosition(positional, message) ? positional : undefined);
     if (!existing || existing.role !== message.role) return message;
     const merged = { ...message } as Record<string, unknown>;
     const prior = existing as unknown as Record<string, unknown>;

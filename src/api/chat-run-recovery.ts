@@ -1,5 +1,8 @@
 import { sanitizeAssistantContent } from "../core/llm/text-tool-calls";
-import { upsertPersistedSessionMessage } from "../core/session-context";
+import {
+  syncPersistedSessionMessageOrder,
+  upsertPersistedSessionMessage,
+} from "../core/session-context";
 import {
   appendSessionEvent,
   getActiveSessionRunId,
@@ -208,14 +211,69 @@ function messageTimestamp(message: ChatMessage): number {
   return Number.isFinite(parsed) ? parsed : 0;
 }
 
-function sortMessages(messages: ChatMessage[]): ChatMessage[] {
-  return messages
-    .map((message, index) => ({ message, index, timestamp: messageTimestamp(message) }))
-    .sort((left, right) => {
-      if (left.timestamp === right.timestamp) return left.index - right.index;
-      return left.timestamp - right.timestamp;
-    })
-    .map(({ message }) => message);
+interface RecoveredRunMessage {
+  message: ChatMessage;
+  runId: string;
+}
+
+function runStartTimes(sessionId: string): Map<string, number> {
+  const starts = new Map<string, number>();
+  for (const event of listAllSessionEvents(sessionId)) {
+    if (event.type !== "run_started") continue;
+    const timestamp = eventTimestamp(event);
+    const known = starts.get(event.runId);
+    if (known === undefined || timestamp < known) starts.set(event.runId, timestamp);
+  }
+  return starts;
+}
+
+function runAnchorIndex(messages: ChatMessage[], startedAt: number): number {
+  return messages.findLastIndex(
+    (message) => message.role === "user" && messageTimestamp(message) <= startedAt
+  );
+}
+
+export function placeRecoveredRunMessages(
+  messages: ChatMessage[],
+  recovered: RecoveredRunMessage[],
+  starts: Map<string, number>
+): ChatMessage[] {
+  const placed = [...messages];
+  const ordered = [...recovered].sort(
+    (left, right) =>
+      (starts.get(left.runId) ?? messageTimestamp(left.message)) -
+      (starts.get(right.runId) ?? messageTimestamp(right.message))
+  );
+  for (const { message, runId } of ordered) {
+    const startedAt = starts.get(runId);
+    if (startedAt === undefined) {
+      placed.push(message);
+      continue;
+    }
+    const otherAnchors = new Set<ChatMessage>();
+    for (const [otherRunId, otherStartedAt] of starts) {
+      if (otherRunId === runId || otherStartedAt <= startedAt) continue;
+      const anchor = placed[runAnchorIndex(placed, otherStartedAt)];
+      if (anchor) otherAnchors.add(anchor);
+    }
+    const anchorIndex = runAnchorIndex(placed, startedAt);
+    let insertAt = anchorIndex + 1;
+    const endedAt = messageTimestamp(message);
+    while (insertAt < placed.length) {
+      const candidate = placed[insertAt];
+      if (
+        !candidate ||
+        candidate.role !== "user" ||
+        otherAnchors.has(candidate) ||
+        messageTimestamp(candidate) > endedAt
+      ) {
+        break;
+      }
+      insertAt += 1;
+    }
+    placed.splice(anchorIndex < 0 ? placed.length : insertAt, 0, message);
+  }
+  return placed;
 }
 
 function hydrateRunMessage(message: ChatMessage, events: SessionLedgerEvent[]): ChatMessage {
@@ -312,7 +370,7 @@ export async function recoverInterruptedSessionMessages(
   const representedRunIds = new Set(
     hydrated.map((message) => message.run_id?.trim()).filter((runId): runId is string => !!runId)
   );
-  let recoveredRunAdded = false;
+  const recoveredMessages: RecoveredRunMessage[] = [];
 
   const latestRunId = latestSessionRunId(sessionId);
   if (!options.hydrateExistingRuns && latestRunId && !eventCache.has(latestRunId)) {
@@ -345,9 +403,8 @@ export async function recoverInterruptedSessionMessages(
       stableKey: `completed-empty-run:${runId}`,
       metadata: { source: "completed_empty_run_recovery" },
     });
-    hydrated.push(recovered);
+    recoveredMessages.push({ message: recovered, runId });
     representedRunIds.add(runId);
-    recoveredRunAdded = true;
   }
 
   for (const run of listIncompleteSessionRuns(sessionId)) {
@@ -397,12 +454,12 @@ export async function recoverInterruptedSessionMessages(
         interruptionTimestamp: interruptedAt,
       },
     });
-    hydrated.push(recovered);
+    recoveredMessages.push({ message: recovered, runId: run.runId });
     representedRunIds.add(run.runId);
-    recoveredRunAdded = true;
   }
 
-  return recoveredRunAdded || hydrated.some((message) => message.interrupted === true)
-    ? sortMessages(hydrated)
-    : hydrated;
+  if (recoveredMessages.length === 0) return hydrated;
+  const placed = placeRecoveredRunMessages(hydrated, recoveredMessages, runStartTimes(sessionId));
+  syncPersistedSessionMessageOrder(sessionId, placed);
+  return placed;
 }

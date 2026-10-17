@@ -730,22 +730,21 @@ export async function revertSessionToMessage(
     throw new Error("Cannot revert subagent sessions");
   }
 
+  const transcript = await getSessionMessages(sessionId);
   const resolvedTarget: RevertSessionTarget =
     typeof target === "number" ? { messageIndex: target } : target;
-  const targetIndex = resolveRevertMessageIndex(session.messages, resolvedTarget);
-  if (targetIndex < 0 || targetIndex >= session.messages.length) {
+  const targetIndex = resolveRevertMessageIndex(transcript, resolvedTarget);
+  if (targetIndex < 0 || targetIndex >= transcript.length) {
     throw new Error("Unable to resolve target user message for revert");
   }
 
-  const targetMessage = session.messages[targetIndex];
+  const targetMessage = transcript[targetIndex];
   if (!targetMessage || targetMessage.role !== "user") {
     throw new Error("Can only revert to a user message");
   }
 
-  const keptMessages = session.messages.slice(0, targetIndex);
-  const visibleMessageCount = session.messages.filter(
-    (message) => message.role !== "system"
-  ).length;
+  const keptMessages = transcript.slice(0, targetIndex);
+  const visibleMessageCount = transcript.filter((message) => message.role !== "system").length;
   const keptCount = keptMessages.filter((message) => message.role !== "system").length;
   const removedCount = visibleMessageCount - keptCount;
 

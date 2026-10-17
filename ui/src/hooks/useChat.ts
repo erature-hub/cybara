@@ -8,7 +8,11 @@ import type {
   SessionRoomConfig,
   SessionTokenUsage,
 } from "@/types";
-import { enrichReloadedMessages, readCachedSessionMessages } from "@/pages/chat/messageCache";
+import {
+  appendNewMessages,
+  enrichReloadedMessages,
+  readCachedSessionMessages,
+} from "@/pages/chat/messageCache";
 
 interface ChatState {
   messages: ChatMessage[];
@@ -223,8 +227,8 @@ export function useChat(agentId?: string, hookOptions?: { useModelRouter?: boole
             ? prev
             : {
                 messages: queuedSend
-                  ? [...prev.messages, userMessage, ...repliedMessages]
-                  : [...prev.messages, ...repliedMessages],
+                  ? appendNewMessages(prev.messages, [userMessage, ...repliedMessages])
+                  : appendNewMessages(prev.messages, repliedMessages),
                 sessionId: response.data!.sessionId,
                 workspaceDir: resolvedWorkspaceDir ?? null,
                 isLoading: false,
