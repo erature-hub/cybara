@@ -8,22 +8,27 @@ import {
   DEFAULT_MODEL_MAX_OUTPUT_TOKENS,
 } from "../agent-internals";
 import type { ToolContext } from "../tools";
+import { isAnthropicInputAndOutputOverflow } from "./anthropic-token-calibration";
 import { estimateRequestValueChars } from "./context-estimate";
 
-export function estimateAnthropicRequestInputTokens(requestBody: Record<string, unknown>): number {
+export function estimateAnthropicRequestInputTokens(
+  requestBody: Record<string, unknown>,
+  charsPerToken: number = CONTEXT_CHARS_PER_TOKEN_ESTIMATE
+): number {
   const chars =
     estimateRequestValueChars(requestBody.system) +
     estimateRequestValueChars(requestBody.messages) +
     estimateRequestValueChars(requestBody.tools) +
     estimateRequestValueChars(requestBody.tool_choice) +
     estimateRequestValueChars(requestBody.model);
-  return Math.max(1, Math.ceil(chars / CONTEXT_CHARS_PER_TOKEN_ESTIMATE));
+  return Math.max(1, Math.ceil(chars / charsPerToken));
 }
 
 export function resolveAnthropicRequestTokenLimit(
   requestBody: Record<string, unknown>,
   maxOutputTokens: number,
-  contextWindowTokens?: number
+  contextWindowTokens?: number,
+  charsPerToken: number = CONTEXT_CHARS_PER_TOKEN_ESTIMATE
 ): number {
   const requestedOutputTokens =
     Number.isFinite(maxOutputTokens) && maxOutputTokens > 0
@@ -40,7 +45,9 @@ export function resolveAnthropicRequestTokenLimit(
     1,
     Math.min(
       requestedOutputTokens,
-      contextTokens - estimateAnthropicRequestInputTokens(requestBody) - reserveTokens
+      contextTokens -
+        estimateAnthropicRequestInputTokens(requestBody, charsPerToken) -
+        reserveTokens
     )
   );
 }
@@ -101,7 +108,7 @@ export function isAnthropicContextOverflowError(
   errorText: string,
   genericContextOverflow: boolean
 ): boolean {
-  if (genericContextOverflow) return true;
+  if (genericContextOverflow || isAnthropicInputAndOutputOverflow(errorText)) return true;
   return providerConfig.startsWith("minimax") && /(?:\(|\b)2013(?:\)|\b)/.test(errorText);
 }
 
@@ -109,12 +116,13 @@ export function recoverAnthropicRequestForContext(
   requestBody: Record<string, unknown>,
   contextWindowTokens: number,
   attempt: number,
-  context?: { model?: string; toolContext?: ToolContext }
+  context?: { model?: string; toolContext?: ToolContext },
+  charsPerToken: number = CONTEXT_CHARS_PER_TOKEN_ESTIMATE
 ): boolean {
   let changed = false;
   const contextBudgetChars = Math.max(
     4096,
-    Math.floor(contextWindowTokens * CONTEXT_CHARS_PER_TOKEN_ESTIMATE * 0.75)
+    Math.floor(contextWindowTokens * charsPerToken * 0.75 * (attempt === 0 ? 1 : 0.8))
   );
   const messages = Array.isArray(requestBody.messages)
     ? (requestBody.messages as Record<string, unknown>[])

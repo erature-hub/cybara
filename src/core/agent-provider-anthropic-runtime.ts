@@ -50,6 +50,14 @@ import {
   recoverAnthropicRequestForContext,
   resolveAnthropicRequestTokenLimit,
 } from "./llm/anthropic-context";
+import { describeAnthropicLoopFailure } from "./llm/anthropic-loop-failure";
+import {
+  anthropicContextBudgetChars,
+  anthropicRequestChars,
+  createAnthropicTokenCalibration,
+  observeAnthropicInputTokens,
+  observeAnthropicOverflow,
+} from "./llm/anthropic-token-calibration";
 import {
   applyAnthropicReasoningOptions,
   collectAnthropicThinkingText,
@@ -120,6 +128,7 @@ export abstract class AgentProviderAnthropicRuntime extends AgentProviderCloudRu
       toolContext?.maxContextTokens ??
       resolveModelContextWindowTokens(providerConfig, providerId, modelId);
     const contextGuard = resolveContextGuardBudgets(contextWindowTokens);
+    const tokenCalibration = createAnthropicTokenCalibration();
 
     const anthropicEndpoint = anthropicEndpointPath(modelId, vertex);
 
@@ -174,7 +183,8 @@ export abstract class AgentProviderAnthropicRuntime extends AgentProviderCloudRu
     requestBody.max_tokens = resolveAnthropicRequestTokenLimit(
       requestBody,
       maxOutputTokens,
-      contextWindowTokens
+      contextWindowTokens,
+      tokenCalibration.charsPerToken
     );
     applyAnthropicReasoningOptions(
       requestBody,
@@ -271,22 +281,37 @@ export abstract class AgentProviderAnthropicRuntime extends AgentProviderCloudRu
         }
       }
 
-      if (
+      const initialContextOverflow =
         response.status === 400 &&
         initialContextRecoveryCount < 2 &&
         isAnthropicContextOverflowError(
           providerConfig,
           lastInitialError,
           isContextOverflowError(lastInitialError)
-        ) &&
+        );
+      if (initialContextOverflow) {
+        observeAnthropicOverflow(tokenCalibration, requestBody, lastInitialError);
+      }
+      if (
+        initialContextOverflow &&
         recoverAnthropicRequestForContext(
           requestBody,
           contextWindowTokens,
           initialContextRecoveryCount,
-          { model: modelId, toolContext }
+          { model: modelId, toolContext },
+          tokenCalibration.charsPerToken
         )
       ) {
         initialContextRecoveryCount += 1;
+        requestBody.max_tokens = Math.min(
+          requestBody.max_tokens as number,
+          resolveAnthropicRequestTokenLimit(
+            requestBody,
+            maxOutputTokens,
+            contextWindowTokens,
+            tokenCalibration.charsPerToken
+          )
+        );
         applyAnthropicReasoningOptions(
           requestBody,
           providerConfig,
@@ -361,6 +386,13 @@ export abstract class AgentProviderAnthropicRuntime extends AgentProviderCloudRu
 
     if (data.usage) {
       const usage = normalizeAnthropicUsage(data.usage);
+      if (usage) {
+        observeAnthropicInputTokens(
+          tokenCalibration,
+          anthropicRequestChars(requestBody),
+          usage.inputTokens
+        );
+      }
       if (usage)
         recordActiveContextUsage(
           sessionIdForVisibleTokenUsage(toolContext),
@@ -658,7 +690,7 @@ export abstract class AgentProviderAnthropicRuntime extends AgentProviderCloudRu
 
       compactAnthropicLoopMessagesForContext(
         currentMessages,
-        contextGuard.contextBudgetChars,
+        anthropicContextBudgetChars(tokenCalibration, contextWindowTokens),
         false,
         { model: modelId, toolContext }
       );
@@ -668,14 +700,6 @@ export abstract class AgentProviderAnthropicRuntime extends AgentProviderCloudRu
         currentMessages,
         maxOutputTokens,
         vertex
-      );
-
-      applyAnthropicReasoningOptions(
-        loopRequestBody,
-        providerConfig,
-        modelId,
-        maxOutputTokens,
-        modelParams
       );
 
       if (systemBlocks.length > 0) {
@@ -694,6 +718,20 @@ export abstract class AgentProviderAnthropicRuntime extends AgentProviderCloudRu
         );
       }
 
+      loopRequestBody.max_tokens = resolveAnthropicRequestTokenLimit(
+        loopRequestBody,
+        maxOutputTokens,
+        contextWindowTokens,
+        tokenCalibration.charsPerToken
+      );
+      applyAnthropicReasoningOptions(
+        loopRequestBody,
+        providerConfig,
+        modelId,
+        loopRequestBody.max_tokens as number,
+        modelParams
+      );
+
       const loopCached = applyAnthropicCacheControl(
         {
           system: loopRequestBody.system as string | undefined,
@@ -710,6 +748,7 @@ export abstract class AgentProviderAnthropicRuntime extends AgentProviderCloudRu
       let loopFatalError = false;
       let loopRetryCount = 0;
       let attemptedLoopOAuthRefresh = false;
+      let loopContextRecoveryCount = 0;
       const loopRequestStartedAt = performance.now();
 
       try {
@@ -754,42 +793,54 @@ export abstract class AgentProviderAnthropicRuntime extends AgentProviderCloudRu
             lastLoopError
           );
 
-          if (loopResponse.status === 400 && isContextOverflowError(lastLoopError)) {
-            compactAnthropicLoopMessagesForContext(
-              currentMessages,
-              Math.max(4096, Math.floor(contextGuard.contextBudgetChars * 0.65)),
-              true,
-              { model: modelId, toolContext }
-            );
-            const retryBody: Record<string, unknown> = {
-              ...loopRequestBody,
-              messages: currentMessages,
-            };
-            const retryResponse = await postAnthropicStreamableMessages(
-              baseUrl,
-              anthropicEndpoint,
-              retryBody,
-              {
-                headers,
-                signal: withLlmRequestTimeout(toolContext?.abortSignal),
-              }
-            );
-            if (!retryResponse.ok) {
-              loopFatalError = true;
-              lastLoopError = await retryResponse.text();
-              this.recordHttpRateLimit(
-                retryResponse.status,
-                retryResponse.headers,
-                {
-                  providerId,
-                  providerType: providerConfig,
-                },
-                lastLoopError
+          if (
+            loopResponse.status === 400 &&
+            loopContextRecoveryCount < 2 &&
+            isAnthropicContextOverflowError(
+              providerConfig,
+              lastLoopError,
+              isContextOverflowError(lastLoopError)
+            )
+          ) {
+            observeAnthropicOverflow(tokenCalibration, loopRequestBody, lastLoopError);
+            if (
+              recoverAnthropicRequestForContext(
+                loopRequestBody,
+                contextWindowTokens,
+                loopContextRecoveryCount,
+                { model: modelId, toolContext },
+                tokenCalibration.charsPerToken
+              )
+            ) {
+              loopContextRecoveryCount += 1;
+              currentMessages.splice(
+                0,
+                currentMessages.length,
+                ...(loopRequestBody.messages as Record<string, unknown>[])
               );
-              break;
+              loopRequestBody.max_tokens = Math.min(
+                loopRequestBody.max_tokens as number,
+                resolveAnthropicRequestTokenLimit(
+                  loopRequestBody,
+                  maxOutputTokens,
+                  contextWindowTokens,
+                  tokenCalibration.charsPerToken
+                )
+              );
+              applyAnthropicReasoningOptions(
+                loopRequestBody,
+                providerConfig,
+                modelId,
+                loopRequestBody.max_tokens as number,
+                modelParams
+              );
+              this.broadcastAgentStatus(
+                "compacting",
+                toolContext,
+                "Provider context limit reached; compacting and continuing..."
+              );
+              continue;
             }
-            loopResponse = retryResponse;
-            break;
           }
 
           if (loopResponse.status === 401 && oauth && !attemptedLoopOAuthRefresh) {
@@ -849,20 +900,18 @@ export abstract class AgentProviderAnthropicRuntime extends AgentProviderCloudRu
       }
 
       if (loopFatalError || !loopResponse || !loopResponse.ok) {
-        const statusCode = loopResponse?.status ?? "unknown";
-        console.warn(
-          `[Agent] Anthropic API error ${statusCode} after ${MAX_RETRIES} retries on iteration ${iterations}. ` +
-            `Gracefully stopping loop with ${allToolCalls.length} completed tool calls.`
+        const hasPartialContent = finalContent.trim().length > 0;
+        const failure = describeAnthropicLoopFailure(
+          loopResponse?.status,
+          lastLoopError,
+          hasPartialContent
         );
-        if (!finalContent.trim()) {
-          finalContent =
-            "I encountered a temporary API error and couldn't complete my response. " +
-            "The work I've done so far has been preserved. Please try again.";
-        } else {
-          finalContent +=
-            "\n\n---\n*Note: I encountered a temporary API error and had to stop early. " +
-            "The above represents partial progress.*";
-        }
+        console.warn(
+          `[Agent] Anthropic API error ${loopResponse?.status ?? "unknown"} (${failure.kind}) on iteration ${iterations}. ` +
+            `Stopping loop with ${allToolCalls.length} completed tool calls. ` +
+            `Provider said: ${lastLoopError.replace(/\s+/g, " ").slice(0, 500)}`
+        );
+        finalContent = hasPartialContent ? finalContent + failure.message : failure.message;
         break;
       }
 
@@ -871,6 +920,13 @@ export abstract class AgentProviderAnthropicRuntime extends AgentProviderCloudRu
       thinkingParts.push(...collectAnthropicThinkingText(responseData.content));
       if (responseData.usage) {
         const usage = normalizeAnthropicUsage(responseData.usage);
+        if (usage) {
+          observeAnthropicInputTokens(
+            tokenCalibration,
+            anthropicRequestChars(loopRequestBody),
+            usage.inputTokens
+          );
+        }
         if (usage)
           recordActiveContextUsage(
             sessionIdForVisibleTokenUsage(toolContext),
