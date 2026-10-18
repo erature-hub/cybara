@@ -38,6 +38,9 @@ describe("local speech catalog", () => {
     expect(describeSpeechWorkerExit(1, null, null, "native module failed\n")).toBe(
       "Packaged speech runtime stopped (exit code 1): native module failed"
     );
+    expect(describeSpeechWorkerExit(null, "SIGKILL", null, "")).toBe(
+      "Packaged speech runtime stopped (signal SIGKILL)"
+    );
     expect(describeSpeechWorkerExit(null, 9, null, "")).toBe(
       "Packaged speech runtime stopped (signal 9)"
     );

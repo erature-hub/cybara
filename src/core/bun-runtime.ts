@@ -13,7 +13,7 @@ import { homedir, tmpdir } from "node:os";
 import { basename, dirname, join, win32 } from "node:path";
 import { extractZipArchive } from "./archive";
 
-export const CYBARA_BUN_RUNTIME_VERSION = "1.4.0";
+export const CYBARA_BUN_RUNTIME_VERSION = "1.4.3";
 
 export type BunRuntimeTarget =
   | "bun-darwin-arm64"
@@ -31,27 +31,27 @@ interface BunRuntimeRelease {
 const BUN_RUNTIME_RELEASES: Record<BunRuntimeTarget, BunRuntimeRelease> = {
   "bun-darwin-arm64": {
     asset: "bun-darwin-aarch64.zip",
-    sha256: "c669e97f6164e1c96e0701748db98dfa77492908cbd8394c7557134a735de381",
+    sha256: "80afd4c069b46a6fa8f3ec520bebc750a7843e4a8d5b9583d29ad436c00a3403",
   },
   "bun-darwin-x64": {
     asset: "bun-darwin-x64.zip",
-    sha256: "1d0211b8f1dc991182344687ad15e72ee86f154845a5f7fa477994cd341dd9b0",
+    sha256: "62660e6438eb872278877acca77e1152d5d031324df368d4a81b428211489d2d",
   },
   "bun-linux-arm64": {
     asset: "bun-linux-aarch64.zip",
-    sha256: "4b1a332ee861983eb93bcfe6f770fff94e3e31b2c388bdaea3c8ed35e58eed0e",
+    sha256: "efa9813da5ed72423bf847f916e8d2c47c0d776add972354026a75e10da9aa21",
   },
   "bun-linux-x64": {
     asset: "bun-linux-x64.zip",
-    sha256: "2d03fb5fb83ac8b567aca0a281b2ce1a1a19d488f56c2968d88c3f25e92fe452",
+    sha256: "3e730528d89775f03f87f05c06787c4df4099d0a37f3f252e7b829cb23816e18",
   },
   "bun-windows-arm64": {
     asset: "bun-windows-aarch64.zip",
-    sha256: "f473bfe2df73ee770548c93dd5d380aea7120c218ec2aa1afdd0bbba7bf18c47",
+    sha256: "5e8f142ef722cbc9f67dc068a166e46ee72be8307b38cac7186589d2face668f",
   },
   "bun-windows-x64": {
     asset: "bun-windows-x64.zip",
-    sha256: "e6f093d39da486b20262ca8cdd5ed6a9e8bc9c2f275b78e6d3a0c5b28cc95901",
+    sha256: "0bf84e808552beea67bf1202a287a35c6c825d837b287b3f8e9dd513dba35d3d",
   },
 };
 
