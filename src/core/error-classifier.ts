@@ -8,6 +8,7 @@ export type ApiErrorCategory =
   | "context_too_long"
   | "bad_request"
   | "network"
+  | "unreachable"
   | "unknown";
 
 export interface ClassifiedApiError {
@@ -17,6 +18,19 @@ export interface ClassifiedApiError {
   reduceContext: boolean;
   status?: number;
   message: string;
+}
+
+const PROVIDER_UNREACHABLE_PATTERN =
+  /was there a typo in the url or port|unable to connect|econnrefused|ehostunreach|enetunreach|ehostdown|connectionrefused|failedtoopensocket|connection refused|host is unreachable|network is unreachable/i;
+
+export function isProviderUnreachableMessage(message: string): boolean {
+  return PROVIDER_UNREACHABLE_PATTERN.test(message);
+}
+
+function errorCode(error: unknown): string {
+  if (!error || typeof error !== "object" || !("code" in error)) return "";
+  const code = (error as { code: unknown }).code;
+  return typeof code === "string" ? code : "";
 }
 
 export function isTransientStatus(status: number): boolean {
@@ -56,6 +70,20 @@ export function classifyApiError(input: {
   const text =
     `${input.body ?? ""} ${(input.error as Error)?.message ?? String(input.error ?? "")}`.toLowerCase();
   const message = text.trim() || (status ? `HTTP ${status}` : "unknown error");
+
+  if (
+    status === undefined &&
+    (isProviderUnreachableMessage(text) || isProviderUnreachableMessage(errorCode(input.error)))
+  ) {
+    return {
+      category: "unreachable",
+      retryable: false,
+      rotateCredential: false,
+      reduceContext: false,
+      status,
+      message,
+    };
+  }
 
   if (
     status === 401 ||
@@ -148,7 +176,7 @@ export function classifyApiError(input: {
     };
   }
   if (
-    /econnreset|enotfound|econnrefused|fetch failed|network|socket hang up|socket connection.*closed|connection (?:was )?closed unexpectedly|epipe/.test(
+    /econnreset|enotfound|fetch failed|network|socket hang up|socket connection.*closed|connection (?:was )?closed unexpectedly|epipe/.test(
       text
     )
   ) {
@@ -227,6 +255,8 @@ export function summarizeClassifiedError(error: ClassifiedApiError): string {
       return "The request timed out — retrying.";
     case "network":
       return "A network error occurred — retrying.";
+    case "unreachable":
+      return "Couldn't connect to the provider. Check that it is running and that its address is correct.";
     case "server_error":
       return "The provider returned a server error — retrying.";
     case "bad_request":

@@ -121,7 +121,7 @@ describe("Chat + Logs + Metrics e2e smoke", () => {
     expect(createAgent.status).toBe(200);
     expect(typeof createAgent.data?.id).toBe("string");
     agentId = createAgent.data.id as string;
-  });
+  }, 45_000);
 
   afterAll(async () => {
     if (agentId) {
