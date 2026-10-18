@@ -1,3 +1,4 @@
+import { persistChatImageReferences } from "../core/chat-image-references";
 import { endComputerUseFocus } from "../core/computer-use-focus";
 import { releaseSessionMobileSimulators } from "../core/mobile-simulator";
 import { anchorActiveContextUsage } from "../core/llm/session-active-context";
@@ -1690,8 +1691,9 @@ async function handleChatTurn(
       : fallbackProcessActivities,
     allToolCalls
   );
-  const assistantContent =
-    cleanContent.trim().length > 0 ? cleanContent : buildNoUsableAssistantResponseMessage();
+  const assistantContent = persistChatImageReferences(
+    cleanContent.trim().length > 0 ? cleanContent : buildNoUsableAssistantResponseMessage()
+  );
 
   const configuredModelMetadata = resolveSessionModelMetadata(agent?.id ?? session.agentId);
   const modelMetadata = executionModelMetadata

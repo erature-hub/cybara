@@ -39,6 +39,7 @@ const jobs: SmokeTestJob[] = [
       "tests/api/chat-message-order.test.ts",
       "tests/api/chat-steering-tail-order.test.ts",
       "tests/api/chat-stop-ordering.test.ts",
+      "tests/api/chat-durable-images.test.ts",
       "tests/api/chat-run-recovery.test.ts",
       "tests/api/browser-routes-mocked.test.ts",
       "tests/api/channel-security-routes-mocked.test.ts",

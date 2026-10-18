@@ -116,6 +116,17 @@ const sessionMessageOrdinalsStatement = db.prepare(
 const setSessionMessageOrdinalStatement = db.prepare(
   "UPDATE session_messages SET ordinal = ? WHERE id = ? AND session_id = ?"
 );
+const setSessionMessageContentStatement = db.prepare(
+  "UPDATE session_messages SET content = ? WHERE id = ? AND session_id = ?"
+);
+
+export function updatePersistedSessionMessageContent(
+  sessionId: string,
+  messageId: string,
+  content: string
+): boolean {
+  return setSessionMessageContentStatement.run(content, messageId, sessionId).changes > 0;
+}
 
 const RECOVERY_MESSAGE_SOURCES = new Set([
   "completed_empty_run_recovery",
