@@ -2,6 +2,11 @@ import { type ProviderModel, tables } from "./database";
 import { discoverModelsDev, type ModelsDevModel, PROVIDER_TO_MODELS_DEV } from "./models-dev";
 import { discoverOpenAICodexModels } from "./openai-codex-models";
 import { type ProviderType, providerManager, providers, resolveProviderType } from "./providers";
+import {
+  DISCOVERY_PLACEHOLDER_CONTEXT_WINDOW,
+  DISCOVERY_PLACEHOLDER_MAX_TOKENS,
+  preferCatalogLimit,
+} from "./providers/model-limit-placeholders";
 
 const DEFAULT_TIMEOUT_MS = 10_000;
 const DISCOVERY_CACHE_TTL_MS = 60_000;
@@ -127,6 +132,7 @@ function normalizeInputTypes(value: unknown): string[] {
 
 function persistModels(
   providerId: string,
+  providerType: string,
   found: ModelsDevModel[]
 ): { added: number; models: DiscoveredModel[] } {
   const selected = found.slice(0, MAX_MODELS_PER_PROVIDER);
@@ -138,13 +144,28 @@ function persistModels(
   for (const model of selected) {
     const current = existingById.get(model.id.trim().toLowerCase());
     const currentInputTypes = normalizeInputTypes(current?.input_types);
+    const catalogDefaults = staticModelDefaults(providerType, model.id);
     tables.providerModels.upsert({
       id: current?.id ?? crypto.randomUUID(),
       provider_id: providerId,
       model_id: model.id,
       model_name: model.name || model.id,
-      context_window: model.contextWindow || current?.context_window || 128000,
-      max_tokens: model.maxTokens || current?.max_tokens || 8192,
+      context_window:
+        model.contextWindow ||
+        preferCatalogLimit(
+          current?.context_window,
+          DISCOVERY_PLACEHOLDER_CONTEXT_WINDOW,
+          catalogDefaults?.contextWindow
+        ) ||
+        DISCOVERY_PLACEHOLDER_CONTEXT_WINDOW,
+      max_tokens:
+        model.maxTokens ||
+        preferCatalogLimit(
+          current?.max_tokens,
+          DISCOVERY_PLACEHOLDER_MAX_TOKENS,
+          catalogDefaults?.maxTokens
+        ) ||
+        DISCOVERY_PLACEHOLDER_MAX_TOKENS,
       reasoning: model.reasoning ?? Boolean(current?.reasoning),
       input_types: model.input?.length
         ? model.input
@@ -177,7 +198,7 @@ async function discoverViaModelsDev(
     return { providerId, discovered: 0, added: 0, models: [], error: "No models.dev mapping" };
   }
   try {
-    const persisted = persistModels(providerId, await discoverCatalog(providerType));
+    const persisted = persistModels(providerId, providerType, await discoverCatalog(providerType));
     return {
       providerId,
       discovered: persisted.models.length,
@@ -215,7 +236,7 @@ async function runProviderDiscovery(
     try {
       const found = await discoverOpenAICodexModels(auth, request);
       if (found.length > 0) {
-        const persisted = persistModels(providerId, found);
+        const persisted = persistModels(providerId, providerType, found);
         providerManager.setAuthoritativeModels(
           providerId,
           persisted.models.map((model) => model.id)
@@ -266,7 +287,7 @@ async function runProviderDiscovery(
       ...catalogById.get(model.id.toLowerCase()),
       ...model,
     }));
-    const persisted = persistModels(providerId, found);
+    const persisted = persistModels(providerId, providerType, found);
     providerManager.setAuthoritativeModels(
       providerId,
       persisted.models.map((model) => model.id)

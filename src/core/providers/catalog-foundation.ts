@@ -112,6 +112,15 @@ export const foundationProviderCatalog = {
         code: true,
       },
       {
+        id: "gpt-5.6-cyber",
+        name: "GPT-5.6 Cyber",
+        context: 400000,
+        maxTokens: 128000,
+        reasoning: true,
+        input: ["text", "image"],
+        code: true,
+      },
+      {
         id: "gpt-5.6-sol",
         name: "GPT-5.6 Sol",
         context: 1050000,
@@ -434,6 +443,22 @@ export const foundationProviderCatalog = {
       {
         id: "claude-opus-5",
         name: "Claude Opus 5",
+        context: 1000000,
+        maxTokens: 128000,
+        reasoning: true,
+        input: ["text", "image", "pdf"],
+      },
+      {
+        id: "claude-haiku-5-5",
+        name: "Claude Haiku 5.5",
+        context: 1000000,
+        maxTokens: 128000,
+        reasoning: true,
+        input: ["text", "image", "pdf"],
+      },
+      {
+        id: "claude-mythos-5-1",
+        name: "Claude Mythos 5.1",
         context: 1000000,
         maxTokens: 128000,
         reasoning: true,
