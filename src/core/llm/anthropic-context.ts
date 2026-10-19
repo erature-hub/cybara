@@ -9,6 +9,7 @@ import {
 } from "../agent-internals";
 import type { ToolContext } from "../tools";
 import { isAnthropicInputAndOutputOverflow } from "./anthropic-token-calibration";
+import { stripAnthropicThinkingBlocks } from "./anthropic-thinking-binding";
 import { estimateRequestValueChars } from "./context-estimate";
 
 export function estimateAnthropicRequestInputTokens(
@@ -137,6 +138,10 @@ export function recoverAnthropicRequestForContext(
   }
   if (compactAnthropicSystem(requestBody, Math.floor(contextBudgetChars * 0.35))) {
     changed = true;
+  }
+
+  if (changed && Array.isArray(requestBody.messages)) {
+    stripAnthropicThinkingBlocks(requestBody.messages as Record<string, unknown>[]);
   }
 
   const currentLimit =

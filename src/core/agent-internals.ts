@@ -100,6 +100,7 @@ export interface AnthropicResponse {
   content: AnthropicContentBlock[];
   model: string;
   usage?: AnthropicUsage;
+  input_transformations?: Array<{ type: string }>;
 }
 
 export interface GooglePartText {
