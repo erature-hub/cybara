@@ -51,6 +51,7 @@ import {
   resolveAnthropicRequestTokenLimit,
 } from "./llm/anthropic-context";
 import { describeAnthropicLoopFailure } from "./llm/anthropic-loop-failure";
+import { stripAnthropicThinkingBlocks } from "./llm/anthropic-thinking-binding";
 import {
   anthropicContextBudgetChars,
   anthropicRequestChars,
@@ -68,6 +69,7 @@ import {
   anthropicTimingOptions,
   postAnthropicStreamableMessages,
   readAnthropicMessageBody,
+  syncAnthropicRequestMessages,
 } from "./llm/anthropic-streaming";
 import {
   anthropicEndpointPath,
@@ -430,6 +432,7 @@ export abstract class AgentProviderAnthropicRuntime extends AgentProviderCloudRu
       role: message.role,
       content: message.content,
     }));
+    syncAnthropicRequestMessages(response, currentMessages);
     const allowedToolNames = new Set(tools.map((tool) => tool.name));
 
     const allToolCalls: AgentToolCallResult[] = [];
@@ -437,6 +440,7 @@ export abstract class AgentProviderAnthropicRuntime extends AgentProviderCloudRu
     let lastProgressThought = "";
     let webResearchToolCalls = 0;
     let webResearchExhausted = false;
+    let activeToolNames = tools.map((tool) => tool.name).join("\u0000");
     const thinkingParts = collectAnthropicThinkingText(currentData.content);
     const hookContext = this.buildHookContext(providerConfig, modelId, toolContext);
     const loopState: AgenticLoopState = {
@@ -702,11 +706,14 @@ export abstract class AgentProviderAnthropicRuntime extends AgentProviderCloudRu
         vertex
       );
 
-      if (systemBlocks.length > 0) {
-        loopRequestBody.system = systemBlocks;
+      if (requestBody.system !== undefined) {
+        loopRequestBody.system = requestBody.system;
       }
 
       const loopTools = toolsAfterWebResearchBudget(tools, webResearchExhausted);
+      const nextToolNames = loopTools.map((tool) => tool.name).join("\u0000");
+      if (nextToolNames !== activeToolNames) stripAnthropicThinkingBlocks(currentMessages);
+      activeToolNames = nextToolNames;
       if (loopTools.length > 0) {
         loopRequestBody.tools = loopTools.map((t) => ({
           name: t.name,
@@ -813,6 +820,7 @@ export abstract class AgentProviderAnthropicRuntime extends AgentProviderCloudRu
               )
             ) {
               loopContextRecoveryCount += 1;
+              requestBody.system = loopRequestBody.system;
               currentMessages.splice(
                 0,
                 currentMessages.length,
@@ -915,8 +923,12 @@ export abstract class AgentProviderAnthropicRuntime extends AgentProviderCloudRu
         break;
       }
 
+      syncAnthropicRequestMessages(loopResponse, currentMessages);
       const loopRead = await readAnthropicMessageBody(loopResponse, loopRequestStartedAt);
       const responseData = loopRead.message;
+      if (responseData.input_transformations?.some((item) => item.type === "thinking_dropped")) {
+        stripAnthropicThinkingBlocks(currentMessages);
+      }
       thinkingParts.push(...collectAnthropicThinkingText(responseData.content));
       if (responseData.usage) {
         const usage = normalizeAnthropicUsage(responseData.usage);
@@ -965,6 +977,7 @@ export abstract class AgentProviderAnthropicRuntime extends AgentProviderCloudRu
           role: "user",
           content: agenticLoopClosingPrompt(limitReason, loopPolicy),
         });
+        stripAnthropicThinkingBlocks(currentMessages);
         const closingBody: Record<string, unknown> = anthropicRequestBase(
           modelId,
           currentMessages,
@@ -978,8 +991,8 @@ export abstract class AgentProviderAnthropicRuntime extends AgentProviderCloudRu
           maxOutputTokens,
           modelParams
         );
-        if (systemBlocks.length > 0) {
-          closingBody.system = systemBlocks;
+        if (requestBody.system !== undefined) {
+          closingBody.system = requestBody.system;
         }
         const closingStartedAt = performance.now();
         let closingResponse: Response | null = null;

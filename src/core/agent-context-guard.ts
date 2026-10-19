@@ -8,6 +8,7 @@ import {
 } from "./agent-internals";
 import { config } from "./config";
 import { recordMidLoopContextCompaction } from "./llm/context-pressure";
+import { stripAnthropicThinkingBlocks } from "./llm/anthropic-thinking-binding";
 import { formatToolResultForModel } from "./llm/model-visible-format";
 import {
   compactedToolResult,
@@ -164,6 +165,7 @@ export function compactAnthropicLoopMessagesForContext(
     forceCompaction = false;
   }
   if (compacted) {
+    stripAnthropicThinkingBlocks(messages);
     recordContextCompaction(beforeChars, totalChars, messages.length, context);
   }
   return compacted;

@@ -1,5 +1,10 @@
 import type { AnthropicContentBlock, AnthropicResponse, AnthropicUsage } from "../agent-internals";
 import { postAnthropicMessages } from "./anthropic-sdk-transport";
+import { normalizeAnthropicToolIds } from "./anthropic-tool-ids";
+import {
+  prepareAnthropicThinkingRequest,
+  recoverAnthropicThinkingSignature,
+} from "./anthropic-thinking-binding";
 
 export interface AnthropicStreamTiming {
   firstTokenMs?: number;
@@ -138,6 +143,7 @@ export function parseAnthropicEventStream(
 ): AnthropicMessageRead {
   const blocks = new Map<number, StreamBlock>();
   let messageId = "";
+  let inputTransformations: Array<{ type: string }> | undefined;
   let model = "";
   let role = "assistant";
   let stopReason: string | null = null;
@@ -178,6 +184,15 @@ export function parseAnthropicEventStream(
           ? (payload.message as Record<string, unknown>)
           : payload;
       messageId = recordValue(message, "id") || messageId;
+      if (Array.isArray(message.input_transformations)) {
+        inputTransformations = message.input_transformations.filter(
+          (value): value is { type: string } =>
+            value !== null &&
+            typeof value === "object" &&
+            "type" in value &&
+            typeof value.type === "string"
+        );
+      }
       model = recordValue(message, "model") || model;
       role = recordValue(message, "role") || role;
       const usage =
@@ -272,6 +287,7 @@ export function parseAnthropicEventStream(
     model,
     content,
     usage: usageFromRecords(startUsage, deltaUsage),
+    ...(inputTransformations ? { input_transformations: inputTransformations } : {}),
   };
 
   const timing: AnthropicStreamTiming = {};
@@ -347,6 +363,16 @@ export function anthropicTimingOptions(
   };
 }
 
+const repairedMessagesByResponse = new WeakMap<Response, Record<string, unknown>[]>();
+
+export function syncAnthropicRequestMessages(
+  response: Response,
+  messages: Record<string, unknown>[]
+): void {
+  const repaired = repairedMessagesByResponse.get(response);
+  if (repaired) messages.splice(0, messages.length, ...repaired);
+}
+
 function replayResponse(source: Response, bodyText: string): Response {
   return new Response(bodyText, {
     status: source.status,
@@ -356,6 +382,46 @@ function replayResponse(source: Response, bodyText: string): Response {
 }
 
 export async function postAnthropicStreamableMessages(
+  baseUrl: string,
+  endpoint: string,
+  body: Record<string, unknown>,
+  init: { headers: Record<string, string>; signal?: AbortSignal },
+  fetchImpl: typeof fetch = fetch
+): Promise<Response> {
+  const messages = Array.isArray(body.messages)
+    ? normalizeAnthropicToolIds(body.messages)
+    : undefined;
+  const normalized = messages && messages !== body.messages ? { ...body, messages } : body;
+  const prepared = prepareAnthropicThinkingRequest(baseUrl, normalized, init.headers);
+  const options = { ...init, headers: prepared.headers };
+  const response = await postStreamableMessagesOnce(
+    baseUrl,
+    endpoint,
+    prepared.body,
+    options,
+    fetchImpl
+  );
+  if (messages && messages !== body.messages) {
+    repairedMessagesByResponse.set(response, messages as Record<string, unknown>[]);
+  }
+  if (response.status !== 400 || init.signal?.aborted) return response;
+  const errorText = await response.text();
+  const recovered = recoverAnthropicThinkingSignature(prepared.body, errorText);
+  if (!recovered || init.signal?.aborted) return replayResponse(response, errorText);
+  const retried = await postStreamableMessagesOnce(
+    baseUrl,
+    endpoint,
+    recovered,
+    options,
+    fetchImpl
+  );
+  if (Array.isArray(recovered.messages)) {
+    repairedMessagesByResponse.set(retried, recovered.messages as Record<string, unknown>[]);
+  }
+  return retried;
+}
+
+async function postStreamableMessagesOnce(
   baseUrl: string,
   endpoint: string,
   body: Record<string, unknown>,
@@ -378,6 +444,7 @@ export async function postAnthropicStreamableMessages(
   if (!STREAM_REJECTION_PATTERN.test(errorText)) {
     return replayResponse(streamed, errorText);
   }
+  if (init.signal?.aborted) return replayResponse(streamed, errorText);
   return await postAnthropicMessages(
     baseUrl,
     endpoint,
