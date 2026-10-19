@@ -58,6 +58,8 @@ describe("vertex provider entries", () => {
     expect(providers.anthropic_vertex.models.map((model) => model.id)).toEqual([
       "claude-opus-5-5",
       "claude-sonnet-5-5",
+      "claude-haiku-5-5",
+      "claude-fable-5-1",
       "claude-opus-5@default",
       "claude-sonnet-5@default",
     ]);
@@ -80,6 +82,8 @@ describe("vertex provider entries", () => {
     expect(modelIds).toEqual([
       "global.anthropic.claude-opus-5-5",
       "global.anthropic.claude-sonnet-5-5",
+      "global.anthropic.claude-haiku-5-5",
+      "global.anthropic.claude-fable-5-1",
       "anthropic.claude-opus-4-8",
       "anthropic.claude-fable-5",
       "anthropic.claude-sonnet-5",

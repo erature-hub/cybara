@@ -66,8 +66,13 @@ interface Metrics {
   h2Weight: string;
   h2Margin: string;
   pMargin: string;
-  tableDisplay: string;
-  tableOverflow: string;
+  tableWidth: number;
+  tableWrapperWidth: number;
+  tableWrapperOverflow: string;
+  tableWrapperBorder: string;
+  tableMargin: string;
+  firstCellPaddingLeft: number;
+  lastCellPaddingRight: number;
   tableBorderCollapse: string;
   thBorderBottom: string;
   thTextAlign: string;
@@ -94,6 +99,10 @@ async function measure(): Promise<Metrics> {
     const tableStyle = style(table);
     const th = style(pick("th"));
     const td = style(pick("td"));
+    const wrapper = table?.parentElement ?? null;
+    const wrapperStyle = style(wrapper);
+    const firstCell = style(pick("tbody td:first-child"));
+    const lastCell = style(pick("tbody td:last-child"));
     const ol = style(pick("ol"));
     const ul = style(pick("ul"));
     const quote = style(pick("blockquote"));
@@ -102,8 +111,13 @@ async function measure(): Promise<Metrics> {
       h2Weight: h2?.fontWeight ?? "",
       h2Margin: h2?.margin ?? "",
       pMargin: p?.margin ?? "",
-      tableDisplay: tableStyle?.display ?? "",
-      tableOverflow: tableStyle?.overflowX ?? "",
+      tableWidth: table ? table.getBoundingClientRect().width : 0,
+      tableWrapperWidth: wrapper ? wrapper.clientWidth : -1,
+      tableWrapperOverflow: wrapperStyle?.overflowX ?? "",
+      tableWrapperBorder: wrapperStyle?.borderTopWidth ?? "",
+      tableMargin: tableStyle?.margin ?? "",
+      firstCellPaddingLeft: Number.parseFloat(firstCell?.paddingLeft ?? "0"),
+      lastCellPaddingRight: Number.parseFloat(lastCell?.paddingRight ?? "0"),
       tableBorderCollapse: tableStyle?.borderCollapse ?? "",
       thBorderBottom: th?.borderBottomWidth ?? "",
       thTextAlign: th?.textAlign ?? "",
@@ -172,8 +186,12 @@ describe("subagent summary markdown typography", () => {
     expect(m.h2Margin).not.toBe("0px");
     expect(m.pMargin).not.toBe("0px");
 
-    expect(m.tableDisplay).toBe("block");
-    expect(m.tableOverflow).toBe("auto");
+    expect(m.tableWrapperOverflow).toBe("auto");
+    expect(Number.parseFloat(m.tableWrapperBorder)).toBeGreaterThan(0);
+    expect(m.tableMargin).toBe("0px");
+    expect(Math.abs(m.tableWidth - m.tableWrapperWidth)).toBeLessThanOrEqual(1);
+    expect(m.firstCellPaddingLeft).toBeGreaterThanOrEqual(8);
+    expect(m.lastCellPaddingRight).toBeGreaterThanOrEqual(8);
     expect(m.tableBorderCollapse).toBe("collapse");
     expect(Number.parseFloat(m.thBorderBottom)).toBeGreaterThan(0);
     expect(m.thTextAlign).toBe("left");

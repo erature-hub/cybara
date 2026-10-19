@@ -474,7 +474,7 @@ describe("UI page API wiring", () => {
     expect(source).toContain("function looksLikeDiffCode");
     expect(source).toContain("if (looksLikeDiffCode(rawCode, language))");
     expect(source).toContain("table: ({ children }) => (");
-    expect(source).toContain("th: ({ children }) => (");
+    expect(source).toContain('<div className="chat-table-scroll">');
     expect(source).toContain("<SyntaxCodeBlock");
     expect(source).toContain("function CopyCodeButton");
     expect(source).toContain("function InlineCodeSnippet");

@@ -15,6 +15,15 @@ export function interruptionCategoryReason(category: unknown): string | undefine
   return typeof category === "string" ? INTERRUPTION_CATEGORY_REASONS[category] : undefined;
 }
 
+const STOPPED_TURN_PROMPT_NOTE =
+  "[The user stopped this response before it finished. Treat that request as cancelled and answer the latest message instead of resuming it.]";
+
+const INTERRUPTED_TURN_PROMPT_NOTE = "[This response was interrupted before it finished.]";
+
+export function interruptedTurnPromptNote(stopped: boolean): string {
+  return stopped ? STOPPED_TURN_PROMPT_NOTE : INTERRUPTED_TURN_PROMPT_NOTE;
+}
+
 export function interruptedResponseText(reason?: string): string {
   if (!reason?.trim()) return INTERRUPTED_RESPONSE;
   const trimmed = reason.trim().replace(/\s+/g, " ").slice(0, 200);

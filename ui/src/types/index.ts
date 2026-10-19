@@ -385,6 +385,8 @@ export interface ChatMessage {
   model?: string;
   metadata_deferred?: boolean;
   timestamp?: string;
+  interrupted?: boolean;
+  stopped?: boolean;
   thinking?: string;
   tool_calls?: ToolCallInfo[];
   agent_transfers?: AgentTransferInfo[];

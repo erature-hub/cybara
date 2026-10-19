@@ -1,3 +1,4 @@
+import { isProviderUnreachableMessage } from "./error-classifier";
 import {
   isUpstreamJsonDecodeError,
   unserializableToolCallArgumentCount,
@@ -53,9 +54,6 @@ function describeBadRequestRejection(
     : `Provider rejected the request (${status}). The model may not support a sent parameter.`;
 }
 
-const CONNECTION_FAILURE_PATTERN =
-  /was there a typo in the url or port|unable to connect|econnrefused|ehostunreach|enetunreach|ehostdown|connectionrefused|failedtoopensocket|connection refused|host is unreachable|network is unreachable/i;
-
 function isLocalNetworkHost(hostname: string): boolean {
   const host = hostname.replace(/^\[|\]$/g, "").toLowerCase();
   if (host === "localhost" || host.startsWith("127.") || host === "::1") return false;
@@ -82,7 +80,7 @@ export function describeProviderConnectionFailure(
   message: string,
   context: { baseUrl?: string | null; providerName?: string; platform?: NodeJS.Platform }
 ): string | undefined {
-  if (!CONNECTION_FAILURE_PATTERN.test(message) || !context.baseUrl) return undefined;
+  if (!isProviderUnreachableMessage(message) || !context.baseUrl) return undefined;
   let target: URL;
   try {
     target = new URL(context.baseUrl);

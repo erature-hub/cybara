@@ -540,8 +540,8 @@ function MultiChatPane({
           className={cn(
             "pointer-events-none absolute inset-1 z-40 flex items-center justify-center rounded-md border border-dashed transition-colors",
             dropActive
-              ? "border-[rgb(var(--accent-primary))] bg-[rgba(var(--surface-panel-rgb),0.9)]"
-              : "border-[rgba(var(--accent-primary),0.34)] bg-[rgba(var(--surface-panel-rgb),0.3)]"
+              ? "border-[rgb(var(--accent-primary))] bg-[color-mix(in_srgb,var(--surface-raised)_90%,transparent)]"
+              : "border-[rgba(var(--accent-primary),0.34)] bg-[color-mix(in_srgb,var(--surface-raised)_30%,transparent)]"
           )}
         >
           {dropActive ? (

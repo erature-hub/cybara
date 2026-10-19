@@ -40,6 +40,7 @@ import { ClarifyQuestionCard, clarifyQuestionFromToolCalls } from "./ClarifyQues
 import { observeDeferredMessage } from "./deferredMessageVisibility";
 import { loadDeferredMessageMetadata } from "./deferredMessageMetadata";
 import { goalIterationNumber } from "./goalLoopPresentation";
+import { interruptedTurnNotice } from "./interruptedTurn";
 import { shouldDeferRichMessageContent } from "./messageRenderBudget";
 import {
   expandTimelineWindow,
@@ -418,6 +419,7 @@ const ChatMessageRow = memo(function ChatMessageRow({
   const interactiveClarify = isLatestEntry
     ? clarifyQuestionFromToolCalls(message.tool_calls)
     : null;
+  const interruptedNotice = interruptedTurnNotice({ ...message, content: presentedContent });
   return (
     <div
       className={cn(
@@ -497,6 +499,15 @@ const ChatMessageRow = memo(function ChatMessageRow({
             onOpenImage={onOpenImage}
             onOpenLink={onOpenLink}
           />
+          {interruptedNotice ? (
+            <div
+              className="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.04] px-2.5 py-1 text-xs text-[var(--text-secondary)]"
+              data-testid="interrupted-turn-notice"
+            >
+              <span className="h-1.5 w-1.5 rounded-full bg-amber-400/80" aria-hidden="true" />
+              {interruptedNotice}
+            </div>
+          ) : null}
           {message.role !== "user" && interactiveClarify ? (
             <ClarifyQuestionCard interactive question={interactiveClarify} sessionId={sessionId} />
           ) : null}

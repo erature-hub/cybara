@@ -18,6 +18,7 @@ import {
   setPersistedSessionRouting,
   setPersistedSessionPinned,
   summarizeSessionTokenUsage,
+  updatePersistedSessionMessageContent,
 } from "../core/session-context";
 import {
   deriveSessionTitleFromMessages,
@@ -57,6 +58,7 @@ import {
 } from "./chat-runtime-state";
 import type { ChatMessage } from "./chat-types";
 import { mergeSessionTranscriptMessages } from "./session-transcript";
+import { hasLocalImageReference, persistChatImageReferences } from "../core/chat-image-references";
 
 export { stripThinkingTags } from "./chat-formatting";
 export {
@@ -395,9 +397,25 @@ export async function getSessionMessages(
     persistedEntry,
     options
   );
-  return mergeSessionTranscriptMessages(recoveredMessages, session.messages || [], {
-    preservePersistedMetadata: options.deferHistoricalMetadata,
-  });
+  const residentMessages = withDurableImageReferences(sessionId, session.messages || []);
+  return mergeSessionTranscriptMessages(
+    withDurableImageReferences(sessionId, recoveredMessages),
+    residentMessages,
+    { preservePersistedMetadata: options.deferHistoricalMetadata }
+  );
+}
+
+function withDurableImageReferences(sessionId: string, messages: ChatMessage[]): ChatMessage[] {
+  for (const message of messages) {
+    if (message.role !== "assistant" || !hasLocalImageReference(message.content)) continue;
+    const durable = persistChatImageReferences(message.content);
+    if (durable === message.content) continue;
+    message.content = durable;
+    if (message.message_id) {
+      updatePersistedSessionMessageContent(sessionId, message.message_id, durable);
+    }
+  }
+  return messages;
 }
 
 function normalizeSessionPageOptions(options?: { limit?: number; offset?: number }): {
@@ -730,22 +748,21 @@ export async function revertSessionToMessage(
     throw new Error("Cannot revert subagent sessions");
   }
 
+  const transcript = await getSessionMessages(sessionId);
   const resolvedTarget: RevertSessionTarget =
     typeof target === "number" ? { messageIndex: target } : target;
-  const targetIndex = resolveRevertMessageIndex(session.messages, resolvedTarget);
-  if (targetIndex < 0 || targetIndex >= session.messages.length) {
+  const targetIndex = resolveRevertMessageIndex(transcript, resolvedTarget);
+  if (targetIndex < 0 || targetIndex >= transcript.length) {
     throw new Error("Unable to resolve target user message for revert");
   }
 
-  const targetMessage = session.messages[targetIndex];
+  const targetMessage = transcript[targetIndex];
   if (!targetMessage || targetMessage.role !== "user") {
     throw new Error("Can only revert to a user message");
   }
 
-  const keptMessages = session.messages.slice(0, targetIndex);
-  const visibleMessageCount = session.messages.filter(
-    (message) => message.role !== "system"
-  ).length;
+  const keptMessages = transcript.slice(0, targetIndex);
+  const visibleMessageCount = transcript.filter((message) => message.role !== "system").length;
   const keptCount = keptMessages.filter((message) => message.role !== "system").length;
   const removedCount = visibleMessageCount - keptCount;
 

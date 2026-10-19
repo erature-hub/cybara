@@ -14,6 +14,7 @@ import {
   TOOL_RESULT_PROMPT_MAX_CHARS,
 } from "./chat-token-optimization";
 import db, { tables } from "./database";
+import { nextSessionMessageOrdinalSql } from "./session-message-ordinal";
 import { sanitizeAssistantContent } from "./llm/text-tool-calls";
 import { MAX_TOOL_CALL_ARGUMENT_CHARS } from "./llm/tool-transcript";
 import { createLogger } from "./logger";
@@ -63,6 +64,7 @@ type SessionMessageMetadata = Partial<
     | "run_id"
     | "worked_duration_ms"
     | "interrupted"
+    | "stopped"
     | "pending_chat_id"
     | "client_pending_id"
   >
@@ -106,7 +108,7 @@ const persistedSessionMessageStatement = db.prepare(
   "SELECT id, role, content, created_at, agent_id, metadata FROM session_messages WHERE session_id = ? AND id = ?"
 );
 const nextSessionMessageOrdinalStatement = db.prepare(
-  "SELECT COALESCE(MAX(COALESCE(ordinal, rowid)), 0) + 1 AS next_ordinal FROM session_messages WHERE session_id = ?"
+  `SELECT (${nextSessionMessageOrdinalSql("?1")}) AS next_ordinal`
 );
 const sessionMessageOrdinalsStatement = db.prepare(
   "SELECT id, COALESCE(ordinal, rowid) AS ordinal FROM session_messages WHERE session_id = ?"
@@ -114,6 +116,17 @@ const sessionMessageOrdinalsStatement = db.prepare(
 const setSessionMessageOrdinalStatement = db.prepare(
   "UPDATE session_messages SET ordinal = ? WHERE id = ? AND session_id = ?"
 );
+const setSessionMessageContentStatement = db.prepare(
+  "UPDATE session_messages SET content = ? WHERE id = ? AND session_id = ?"
+);
+
+export function updatePersistedSessionMessageContent(
+  sessionId: string,
+  messageId: string,
+  content: string
+): boolean {
+  return setSessionMessageContentStatement.run(content, messageId, sessionId).changes > 0;
+}
 
 const RECOVERY_MESSAGE_SOURCES = new Set([
   "completed_empty_run_recovery",
@@ -175,6 +188,9 @@ function serializeSessionMessageMetadata(
   }
   if (message.interrupted === true) {
     metadata.interrupted = true;
+  }
+  if (message.stopped === true) {
+    metadata.stopped = true;
   }
   if (typeof message.pending_chat_id === "string" && message.pending_chat_id.trim()) {
     metadata.pending_chat_id = message.pending_chat_id.trim();

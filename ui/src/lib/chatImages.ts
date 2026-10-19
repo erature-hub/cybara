@@ -71,6 +71,7 @@ export function mediaPathSrc(filePath: string): string {
 
 export function chatMarkdownImageSrc(source: string): string | null {
   if (/^(https?:|data:image\/)/i.test(source)) return source;
+  if (source.startsWith("/api/media?path=")) return withGatewayBasePath(source);
   if (source.startsWith("/") && source.includes("/api/media?path=")) return source;
   if (!source.toLowerCase().startsWith("file://")) return null;
   try {

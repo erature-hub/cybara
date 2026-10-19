@@ -3,6 +3,11 @@ import { tables, type Provider, type ProviderModel } from "./database";
 import { codingProviderCatalog } from "./providers/catalog-coding";
 import { cloudProviderCatalog } from "./providers/catalog-cloud";
 import { foundationProviderCatalog } from "./providers/catalog-foundation";
+import {
+  DISCOVERY_PLACEHOLDER_CONTEXT_WINDOW,
+  DISCOVERY_PLACEHOLDER_MAX_TOKENS,
+  preferCatalogLimit,
+} from "./providers/model-limit-placeholders";
 import { integrationProviderCatalog } from "./providers/catalog-integrations";
 import { accountOAuthProviders } from "./providers/account-oauth";
 import { parseOAuthTokenPayload, type ProviderOAuthConfig } from "./provider-oauth";
@@ -531,8 +536,18 @@ class ProviderManager {
           model_name: genericFallback ? model.name : existing.model_name || model.name,
           context_window: genericFallback
             ? model.context
-            : (existing.context_window ?? model.context),
-          max_tokens: genericFallback ? model.maxTokens : (existing.max_tokens ?? model.maxTokens),
+            : preferCatalogLimit(
+                existing.context_window,
+                DISCOVERY_PLACEHOLDER_CONTEXT_WINDOW,
+                model.context
+              ),
+          max_tokens: genericFallback
+            ? model.maxTokens
+            : preferCatalogLimit(
+                existing.max_tokens,
+                DISCOVERY_PLACEHOLDER_MAX_TOKENS,
+                model.maxTokens
+              ),
           reasoning: genericFallback ? model.reasoning : (existing.reasoning ?? model.reasoning),
           input_types: genericFallback ? [...model.input] : existing.input_types,
         });

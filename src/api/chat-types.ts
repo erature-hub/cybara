@@ -33,6 +33,7 @@ export interface ChatMessage {
   run_id?: string;
   worked_duration_ms?: number;
   interrupted?: boolean;
+  stopped?: boolean;
   pending_chat_id?: string;
   client_pending_id?: string;
   images?: AgentImage[];

@@ -9,7 +9,7 @@ import { resolveActionAuthorizationInstruction } from "../core/llm/action-author
 import { datedTurnContent } from "../core/prompt-time-context";
 import { getActiveGoalContextLine } from "../core/session-goals";
 import { buildAgentHandoffInstruction, stripAgentAttributionTag } from "./chat-agent-handoff";
-import { INTERRUPTED_RESPONSE } from "./chat-interruption";
+import { INTERRUPTED_RESPONSE, interruptedTurnPromptNote } from "./chat-interruption";
 import type { ChatMessage } from "./chat-types";
 
 export { stripThinkingTags } from "./chat-formatting";
@@ -112,8 +112,12 @@ export function buildChatExecutionMessagesForAgent(
       return [];
     }
     const compacted = compactChatContentForPrompt(sessionMessage);
-    const content =
+    const stripped =
       sessionMessage.role === "assistant" ? stripAgentAttributionTag(compacted) : compacted;
+    const content =
+      sessionMessage.role === "assistant" && sessionMessage.interrupted === true && !stripped.trim()
+        ? interruptedTurnPromptNote(sessionMessage.stopped === true)
+        : stripped;
     const imageContext = sessionMessage.image_context?.trim();
     const message: AgentMessage = {
       role: sessionMessage.role,

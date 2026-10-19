@@ -3,6 +3,7 @@ import { chmodSync, existsSync, mkdirSync } from "fs";
 import { join } from "path";
 import { collapsePersistedInstructionLedgers } from "./instruction-ledger-repair";
 import { dataDir } from "./paths";
+import { nextSessionMessageOrdinalSql } from "./session-message-ordinal";
 import { isSealedSecret, openSecret, sealSecret } from "./secret-storage";
 import { applyPendingSystemRestore } from "./system-backup";
 
@@ -494,6 +495,9 @@ try {
 
   try {
     db.exec("UPDATE session_messages SET ordinal = rowid WHERE ordinal IS NULL");
+    db.exec(
+      "CREATE INDEX IF NOT EXISTS idx_session_messages_session_order ON session_messages(session_id, ordinal, id)"
+    );
   } catch {}
 
   try {
@@ -989,7 +993,8 @@ const stmts = {
       "SELECT * FROM session_messages WHERE session_id = ? ORDER BY COALESCE(ordinal, rowid) ASC, rowid ASC"
     ),
     add: prepare(
-      "INSERT INTO session_messages (id, session_id, agent_id, channel_type, channel_id, role, content, metadata, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, COALESCE(?, CURRENT_TIMESTAMP))"
+      `INSERT INTO session_messages (id, session_id, agent_id, channel_type, channel_id, role, content, metadata, created_at, ordinal)
+       VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, COALESCE(?9, CURRENT_TIMESTAMP), (${nextSessionMessageOrdinalSql("?2")}))`
     ),
     list: prepare("SELECT * FROM session_messages ORDER BY created_at DESC LIMIT 1000"),
     listSince: prepare(

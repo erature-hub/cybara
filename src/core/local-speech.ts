@@ -185,7 +185,7 @@ let speechWorkerExitHookInstalled = false;
 
 export function describeSpeechWorkerExit(
   exitCode: number | null,
-  signalCode: number | null,
+  signalCode: NodeJS.Signals | number | null,
   error: { message?: string } | null | undefined,
   stderr: string
 ): string {

@@ -264,7 +264,8 @@ async function runInChild(
       toolReceipts: Object.freeze(toolReceipts),
     };
     if (value.ok) trustedToolReceipts.set(completed, Object.freeze(trustedReceipts));
-    resolveResult(completed);
+    const resolve = resolveResult;
+    void waitForChildExit(processHandle).then(() => resolve(completed));
   };
 
   const stop = (error: string): void => {
@@ -441,6 +442,13 @@ async function runInChild(
   context?.abortSignal?.addEventListener("abort", abortFromContext, { once: true });
   timer = setTimeout(() => stop(`Code execution timed out after ${timeoutMs}ms`), timeoutMs);
   return result;
+}
+
+const CHILD_EXIT_GRACE_MS = 2000;
+
+async function waitForChildExit(handle: { exited: Promise<number> } | undefined): Promise<void> {
+  if (!handle) return;
+  await Promise.race([handle.exited.catch(() => undefined), Bun.sleep(CHILD_EXIT_GRACE_MS)]);
 }
 
 export async function handleExecuteCode(

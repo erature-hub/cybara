@@ -102,6 +102,15 @@ const XAI_GROK_MODELS = [
     code: true,
   },
   {
+    id: "grok-4.7",
+    name: "Grok 4.7",
+    context: 500000,
+    maxTokens: 64000,
+    reasoning: true,
+    input: ["text", "image"],
+    code: true,
+  },
+  {
     id: "grok-4.6",
     name: "Grok 4.6",
     context: 500000,

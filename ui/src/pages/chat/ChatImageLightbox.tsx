@@ -12,6 +12,7 @@ import {
 import { createPortal } from "react-dom";
 import { copyChatImage, saveChatImage } from "@/lib/chatImageExport";
 import { peekChatImageBlob } from "@/lib/chatImages";
+import { makeSiblingsInert, TOP_OVERLAY_Z_INDEX } from "@/lib/overlayLayers";
 import { ChatImageContextMenu } from "./ChatImageContextMenu";
 import type { ChatImageContextMenuPosition } from "./imageContextMenuModel";
 import { clampLightboxZoom, LIGHTBOX_ZOOM_STEP, nextLightboxIndex } from "./imageLightboxModel";
@@ -47,6 +48,7 @@ export function ChatImageLightbox({
   const [contextMenu, setContextMenu] = useState<ChatImageContextMenuPosition | null>(null);
   const [notice, setNotice] = useState<LightboxNotice | null>(null);
   const closeButtonRef = useRef<HTMLButtonElement>(null);
+  const rootRef = useRef<HTMLDivElement>(null);
   const imageRef = useRef<HTMLImageElement>(null);
   const contextMenuOpenRef = useRef(false);
   const onCloseRef = useRef(onClose);
@@ -125,6 +127,12 @@ export function ChatImageLightbox({
   }, [zoom]);
 
   useEffect(() => {
+    const root = rootRef.current;
+    if (!root) return;
+    return makeSiblingsInert(Array.from(document.body.children) as HTMLElement[], root);
+  }, []);
+
+  useEffect(() => {
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
     closeButtonRef.current?.focus();
@@ -193,10 +201,12 @@ export function ChatImageLightbox({
 
   return createPortal(
     <div
+      ref={rootRef}
       role="dialog"
       aria-modal="true"
       aria-label="Image preview"
-      className="fixed inset-0 z-[100] flex flex-col bg-black/95 backdrop-blur-xl"
+      className="fixed inset-0 isolate flex flex-col bg-black/95 backdrop-blur-xl"
+      style={{ zIndex: TOP_OVERLAY_Z_INDEX }}
       onClick={(event) => {
         if (event.target === event.currentTarget) onClose();
       }}
