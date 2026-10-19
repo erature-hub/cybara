@@ -351,19 +351,10 @@ function MessageContentComponent({
       ol: ({ children }) => <ol className="list-decimal pl-4 mb-2">{children}</ol>,
       li: ({ children }) => <li className="mb-1">{children}</li>,
       table: ({ children }) => (
-        <div className="my-3 overflow-x-auto rounded-xl border border-white/10 bg-white/[0.03]">
-          <table className="chat-code-text w-full border-collapse">{children}</table>
+        <div className="chat-table-scroll">
+          <table>{children}</table>
         </div>
       ),
-      thead: ({ children }) => <thead className="bg-white/5">{children}</thead>,
-      tbody: ({ children }) => <tbody>{children}</tbody>,
-      tr: ({ children }) => (
-        <tr className="border-b border-white/10 last:border-b-0">{children}</tr>
-      ),
-      th: ({ children }) => (
-        <th className="text-left font-semibold text-gray-100 px-3 py-2 align-top">{children}</th>
-      ),
-      td: ({ children }) => <td className="px-3 py-2 align-top text-gray-300">{children}</td>,
       h1: ({ children }) => <h1 className="text-xl font-bold mb-2">{children}</h1>,
       h2: ({ children }) => <h2 className="text-lg font-bold mb-2">{children}</h2>,
       h3: ({ children }) => <h3 className="text-base font-bold mb-2">{children}</h3>,

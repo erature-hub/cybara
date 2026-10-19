@@ -64,12 +64,12 @@ export function LocalChromePanel(): React.JSX.Element {
   }, [load]);
 
   return (
-    <section className="space-y-2 rounded-md border border-[rgb(var(--border-subtle))] p-3">
+    <section className="space-y-2 rounded-md border border-[var(--surface-border)] p-3">
       <header className="flex items-center gap-2">
         <Globe size={16} aria-hidden />
         <h3 className="text-sm font-medium">Your own Chrome</h3>
       </header>
-      <p className="text-xs text-[rgb(var(--text-secondary))]">
+      <p className="text-xs text-[var(--text-secondary)]">
         Drive the Chrome you already use, with its real tabs and signed-in sessions.
       </p>
       {status?.attached ? (
@@ -78,7 +78,7 @@ export function LocalChromePanel(): React.JSX.Element {
             Connected on port {status.port}
             {status.product ? ` · ${status.product}` : ""} · {status.targets.length} tab(s)
           </p>
-          <ul className="max-h-32 space-y-1 overflow-y-auto text-xs text-[rgb(var(--text-secondary))]">
+          <ul className="max-h-32 space-y-1 overflow-y-auto text-xs text-[var(--text-secondary)]">
             {status.targets.map((target) => (
               <li key={target.id} className="truncate">
                 {target.title || target.url}
@@ -87,7 +87,7 @@ export function LocalChromePanel(): React.JSX.Element {
           </ul>
           <button
             type="button"
-            className="inline-flex items-center gap-1.5 rounded-md border border-[rgb(var(--border-subtle))] px-2 py-1 text-xs font-medium hover:bg-[rgb(var(--surface-raised))] disabled:opacity-50"
+            className="inline-flex items-center gap-1.5 rounded-md border border-[var(--surface-border)] px-2 py-1 text-xs font-medium hover:bg-[var(--surface-hover)] disabled:opacity-50"
             disabled={busy}
             onClick={() => void run("/api/browser/local-chrome/detach")}
           >
@@ -98,11 +98,11 @@ export function LocalChromePanel(): React.JSX.Element {
       ) : (
         <>
           {status?.reason ? (
-            <p className="text-xs text-[rgb(var(--text-tertiary))]">{status.reason}</p>
+            <p className="text-xs text-[var(--text-muted)]">{status.reason}</p>
           ) : null}
           <button
             type="button"
-            className="inline-flex items-center gap-1.5 rounded-md border border-[rgb(var(--border-subtle))] px-2 py-1 text-xs font-medium hover:bg-[rgb(var(--surface-raised))] disabled:opacity-50"
+            className="inline-flex items-center gap-1.5 rounded-md border border-[var(--surface-border)] px-2 py-1 text-xs font-medium hover:bg-[var(--surface-hover)] disabled:opacity-50"
             disabled={busy}
             onClick={() => void run("/api/browser/local-chrome/attach")}
           >
