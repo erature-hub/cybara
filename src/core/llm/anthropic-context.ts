@@ -42,15 +42,63 @@ export function resolveAnthropicRequestTokenLimit(
       ? Math.max(1, Math.floor(contextWindowTokens))
       : Math.max(requestedOutputTokens, DEFAULT_MODEL_CONTEXT_WINDOW_TOKENS);
   const reserveTokens = Math.max(128, Math.floor(contextTokens * 0.01));
-  return Math.max(
-    1,
-    Math.min(
-      requestedOutputTokens,
-      contextTokens -
-        estimateAnthropicRequestInputTokens(requestBody, charsPerToken) -
-        reserveTokens
-    )
+  const minimumOutputTokens = Math.min(
+    requestedOutputTokens,
+    4096,
+    Math.max(1, Math.floor(contextTokens * 0.1))
   );
+  const availableOutputTokens = (): number =>
+    contextTokens - estimateAnthropicRequestInputTokens(requestBody, charsPerToken) - reserveTokens;
+  if (availableOutputTokens() < minimumOutputTokens) {
+    makeAnthropicOutputRoom(
+      requestBody,
+      contextTokens - reserveTokens - minimumOutputTokens,
+      charsPerToken
+    );
+  }
+  const availableTokens = availableOutputTokens();
+  if (availableTokens < minimumOutputTokens) {
+    throw new Error(
+      `Insufficient Anthropic context for a useful response: ${availableTokens} output tokens available, ${minimumOutputTokens} required`
+    );
+  }
+  return Math.min(requestedOutputTokens, availableTokens);
+}
+
+function makeAnthropicOutputRoom(
+  requestBody: Record<string, unknown>,
+  inputBudgetTokens: number,
+  charsPerToken: number
+): void {
+  const messages = Array.isArray(requestBody.messages)
+    ? (requestBody.messages as Record<string, unknown>[])
+    : [];
+  const inputBudgetChars = Math.max(0, Math.floor(inputBudgetTokens * charsPerToken));
+  const fixedChars = estimateRequestValueChars({ ...requestBody, messages: undefined });
+  let changed = compactAnthropicLoopMessagesForContext(
+    messages,
+    Math.max(0, inputBudgetChars - fixedChars),
+    true
+  );
+  while (estimateAnthropicRequestInputTokens(requestBody, charsPerToken) > inputBudgetTokens) {
+    const nextTurn = messages.findIndex(
+      (message, index) => index > 0 && messageStartsIndependentTurn(message)
+    );
+    if (nextTurn < 1) break;
+    messages.splice(0, nextTurn);
+    changed = true;
+  }
+  if (estimateAnthropicRequestInputTokens(requestBody, charsPerToken) > inputBudgetTokens) {
+    const otherChars =
+      estimateRequestValueChars(requestBody.messages) +
+      estimateRequestValueChars(requestBody.tools) +
+      estimateRequestValueChars(requestBody.tool_choice) +
+      estimateRequestValueChars(requestBody.model);
+    changed =
+      compactAnthropicSystem(requestBody, Math.max(0, inputBudgetChars - otherChars - 128)) ||
+      changed;
+  }
+  if (changed) stripAnthropicThinkingBlocks(messages);
 }
 
 function messageStartsIndependentTurn(message: Record<string, unknown>): boolean {

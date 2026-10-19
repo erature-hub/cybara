@@ -1,5 +1,6 @@
 import type { AnthropicContentBlock, AnthropicResponse, AnthropicUsage } from "../agent-internals";
 import { postAnthropicMessages } from "./anthropic-sdk-transport";
+import { normalizeAnthropicToolIds } from "./anthropic-tool-ids";
 import {
   prepareAnthropicThinkingRequest,
   recoverAnthropicThinkingSignature,
@@ -387,7 +388,11 @@ export async function postAnthropicStreamableMessages(
   init: { headers: Record<string, string>; signal?: AbortSignal },
   fetchImpl: typeof fetch = fetch
 ): Promise<Response> {
-  const prepared = prepareAnthropicThinkingRequest(baseUrl, body, init.headers);
+  const messages = Array.isArray(body.messages)
+    ? normalizeAnthropicToolIds(body.messages)
+    : undefined;
+  const normalized = messages && messages !== body.messages ? { ...body, messages } : body;
+  const prepared = prepareAnthropicThinkingRequest(baseUrl, normalized, init.headers);
   const options = { ...init, headers: prepared.headers };
   const response = await postStreamableMessagesOnce(
     baseUrl,
@@ -396,6 +401,9 @@ export async function postAnthropicStreamableMessages(
     options,
     fetchImpl
   );
+  if (messages && messages !== body.messages) {
+    repairedMessagesByResponse.set(response, messages as Record<string, unknown>[]);
+  }
   if (response.status !== 400 || init.signal?.aborted) return response;
   const errorText = await response.text();
   const recovered = recoverAnthropicThinkingSignature(prepared.body, errorText);
