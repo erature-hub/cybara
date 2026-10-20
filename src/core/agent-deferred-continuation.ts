@@ -129,22 +129,41 @@ export function requestedDeliverablePaths(content: string): string[] {
   return [...paths];
 }
 
-export function requestedDeliverablePathsFromMessages(
-  messages: Array<{ role?: unknown; content?: unknown }>
-): string[] {
+const CONTINUATION_REPLY_PATTERN =
+  /^(?:continue|go ahead|proceed|yes|yep|ok(?:ay)?|sure|do it|keep going|retry|try again|resume|go on)(?:\s+please)?[.!]*$/i;
+
+function isContinuationMessage(content: string): boolean {
+  const trimmed = content.trim();
+  return (
+    trimmed === DEFERRED_EXECUTION_CONTINUATION_PROMPT.trim() ||
+    CONTINUATION_REPLY_PATTERN.test(trimmed)
+  );
+}
+
+function currentRequestMessages<T extends { role?: unknown; content?: unknown }>(
+  messages: T[]
+): T[] {
   for (let index = messages.length - 1; index >= 0; index -= 1) {
     const message = messages[index];
     if (message?.role !== "user" || typeof message.content !== "string") continue;
-    const paths = requestedDeliverablePaths(message.content);
-    if (paths.length > 0) return paths;
+    if (isContinuationMessage(message.content)) continue;
+    return messages.slice(index);
   }
-  return [];
+  return messages;
+}
+
+export function requestedDeliverablePathsFromMessages(
+  messages: Array<{ role?: unknown; content?: unknown }>
+): string[] {
+  const [anchor] = currentRequestMessages(messages);
+  if (anchor?.role !== "user" || typeof anchor.content !== "string") return [];
+  return requestedDeliverablePaths(anchor.content);
 }
 
 export function requestedDeliverableNeedsExtendedEvidence(
   messages: Array<{ role?: unknown; content?: unknown }>
 ): boolean {
-  return messages.some(
+  return currentRequestMessages(messages).some(
     (message) =>
       message.role === "user" &&
       typeof message.content === "string" &&
@@ -155,7 +174,7 @@ export function requestedDeliverableNeedsExtendedEvidence(
 export function requestedDeliverableNeedsInspection(
   messages: Array<{ role?: unknown; content?: unknown }>
 ): boolean {
-  return messages.some(
+  return currentRequestMessages(messages).some(
     (message) =>
       message.role === "user" &&
       typeof message.content === "string" &&

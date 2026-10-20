@@ -45,6 +45,24 @@ describe("deferred agent execution", () => {
     ).toBe(true);
   });
 
+  test("does not carry an earlier turn's deliverable into a new request", () => {
+    const messages = [
+      { role: "user", content: "Inspect the index and write `output/report.md`." },
+      { role: "assistant", content: "Saved output/report.md." },
+      { role: "user", content: "Now open example.com in the browser." },
+    ];
+    expect(requestedDeliverablePathsFromMessages(messages)).toEqual([]);
+    expect(requestedDeliverableNeedsInspection(messages)).toBe(false);
+    expect(requestedDeliverableNeedsExtendedEvidence(messages)).toBe(false);
+    expect(
+      requestedDeliverablePathsFromMessages([
+        ...messages.slice(0, 1),
+        { role: "assistant", content: "Should I go ahead?" },
+        { role: "user", content: "go ahead" },
+      ])
+    ).toEqual(["output/report.md"]);
+  });
+
   test("resolves workspace-prefixed targets from the active workspace root", () => {
     expect(
       requestedDeliverablePathsFromMessages([

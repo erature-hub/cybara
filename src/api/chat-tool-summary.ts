@@ -669,11 +669,23 @@ export function requiredDirectToolForMessage(message: string): string | undefine
 
   const namesComputerUse = /\bcomputer[-_\s]?use\b/.test(lower);
   const namesDesktop = /\b(desktop|screen)\b/.test(lower);
+  const namesBrowserWork =
+    /\b(?:browser|web\s?page|website|web\s?site|site|tab|url|chrome|safari|firefox)\b|https?:\/\/|\bwww\./.test(
+      lower
+    );
+  const namesDesktopFiles =
+    /\bdesktop\s+(?:folder|directory|files?)\b|~\/desktop\b|\bfiles?\s+on\s+(?:my|the)\s+desktop\b/.test(
+      lower
+    );
   const requestsDesktopAction =
     /\b(capture|screenshot|move|click|type|scroll|drag|focus|control|open|close|list)\b/.test(
       lower
     );
-  if ((namesComputerUse || namesDesktop) && requestsDesktopAction) {
+  const requestsScreenAction = /\b(capture|screenshot|click|scroll|drag|focus|control)\b/.test(
+    lower
+  );
+  if (namesComputerUse && requestsDesktopAction) return "computer_use";
+  if (namesDesktop && requestsScreenAction && !namesBrowserWork && !namesDesktopFiles) {
     return "computer_use";
   }
 

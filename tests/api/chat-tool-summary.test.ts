@@ -455,6 +455,18 @@ describe("chat tool summary utilities", () => {
     expect(requiredDirectToolForMessage("Explain desktop automation security")).toBeUndefined();
   });
 
+  test("does not force desktop control for browser or desktop-folder work", () => {
+    expect(
+      requiredDirectToolForMessage("Open example.com in the browser and screenshot the screen")
+    ).toBeUndefined();
+    expect(
+      requiredDirectToolForMessage("Capture the screen of https://example.com in a new tab")
+    ).toBeUndefined();
+    expect(requiredDirectToolForMessage("List the files on my desktop")).toBeUndefined();
+    expect(requiredDirectToolForMessage("Open the desktop folder and list it")).toBeUndefined();
+    expect(requiredDirectToolForMessage("Use computer use to open Safari")).toBe("computer_use");
+  });
+
   test("binds explicit command execution to exec without forcing explanations", () => {
     expect(
       requiredDirectToolForMessage(
