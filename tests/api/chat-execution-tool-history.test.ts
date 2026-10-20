@@ -1,5 +1,9 @@
 import { describe, expect, test } from "bun:test";
-import { buildChatExecutionMessagesForAgent } from "../../src/api/chat-execution-messages";
+import {
+  buildChatExecutionMessagesForAgent,
+  replayedToolOutcome,
+  TRANSIENT_TOOL_FAILURE_NOTE,
+} from "../../src/api/chat-execution-messages";
 import { INTERRUPTED_RESPONSE } from "../../src/api/chat-interruption";
 import type { ChatMessage } from "../../src/api/chat-types";
 import { TOOL_RESULT_PROMPT_MAX_CHARS } from "../../src/core/chat-token-optimization";
@@ -258,4 +262,38 @@ test("server transition metadata survives execution mapping without resurrecting
       .map((message) => message.instructionUpdate?.agentId)
   ).toEqual(["b", "a"]);
   expect(after.at(-1)?.content).toBe("Agent A");
+});
+
+test("marks earlier availability and approval failures as retryable", () => {
+  for (const error of [
+    "Tool not enabled for this agent: browser",
+    "Tool 'computer_use' was denied by the operator. It needs approval, but no Cybara app is connected to approve it.",
+    "User switched to Notes while Cybara was working in Finder. Stop the conversation to let Cybara resume.",
+    "Cybara cannot reach your Chrome. Install the Cybara browser extension and connect it.",
+  ]) {
+    expect(replayedToolOutcome({ error })).toEqual({ error, note: TRANSIENT_TOOL_FAILURE_NOTE });
+  }
+  expect(replayedToolOutcome({ error: "not a repository" })).toEqual({ error: "not a repository" });
+  expect(replayedToolOutcome({ result: { ok: true }, error: "ignored" })).toEqual({ ok: true });
+
+  const replayed = buildChatExecutionMessagesForAgent([
+    { role: "user", content: "Open the site", timestamp: "2026-10-19T10:00:00.000Z" },
+    {
+      role: "assistant",
+      content: "I could not use the browser.",
+      timestamp: "2026-10-19T10:00:05.000Z",
+      tool_calls: [
+        {
+          id: "call-denied",
+          name: "browser",
+          args: { action: "open" },
+          error: "Tool 'browser' was denied by the operator.",
+          status: "failed",
+        },
+      ],
+    },
+    { role: "user", content: "Try again", timestamp: "2026-10-19T10:01:00.000Z" },
+  ] as ChatMessage[]);
+  const toolResult = replayed.find((message) => message.role === "tool");
+  expect(toolResult?.content).toContain("checked again on every turn");
 });

@@ -591,6 +591,8 @@ export async function deleteSession(sessionId: string): Promise<boolean> {
   try {
     await chatTurnMutex.waitForIdle(key);
     await releaseSessionMobileSimulators(key);
+    const { releaseBrowserForSession } = await import("../core/tools/handlers/browser");
+    await releaseBrowserForSession(key);
     const memoryDeleted = deleteResidentChatSession(key);
     const persistedDeleted = await deletePersistedSession(key);
     if (memoryDeleted || persistedDeleted) {

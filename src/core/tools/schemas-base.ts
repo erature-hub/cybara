@@ -233,6 +233,7 @@ export const baseToolSchemas: Record<string, Omit<Tool, "handler">> = {
       "Keep the embedded browser open after completing the task so the user can inspect the final page; close it only when explicitly requested.",
       "When using refs from snapshot (e.g., e12), keep the same tab by passing targetId from snapshot into follow-up actions.",
       "For stable refs across calls, prefer snapshot with refs='aria'.",
+      "Pass target='chrome' to drive the user's own Chrome with their signed-in sessions (through the Cybara browser extension or an attached Chrome) when they ask to use their browser, their logged-in account, or a tab they shared; the choice sticks for the session until target='embedded'.",
       "Suggested flow: open -> snapshot -> extract data -> respond; for interactions: snapshot -> act.",
     ].join("\\n"),
     category: "browser",
@@ -282,6 +283,12 @@ export const baseToolSchemas: Record<string, Omit<Tool, "handler">> = {
             "Browser action: 'open'/'navigate' to load URL, 'resize' to set a named viewportMode or explicit dimensions, 'screenshot' to capture page as IMAGE (returns base64), 'snapshot' for page TEXT, 'click'/'type' to interact",
         },
         sessionId: { type: "string", description: "Session ID for legacy browser session" },
+        target: {
+          type: "string",
+          enum: ["embedded", "chrome"],
+          description:
+            "Which browser to drive: 'embedded' (default, isolated Cybara browser shown in the chat preview) or 'chrome' (the user's own Chrome via the Cybara extension; reuses the tab they shared, otherwise opens a new tab). Sticks for the session.",
+        },
         name: { type: "string", description: "Profile name for create/delete/start/stopProfile" },
         profile: { type: "string", description: "Profile name for profile-related actions" },
         color: { type: "string", description: "Profile color (hex)" },

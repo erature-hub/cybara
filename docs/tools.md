@@ -145,6 +145,16 @@ Full Chrome control via Playwright.
 {"name": "browser", "args": {"action": "act", "request": {"kind": "click", "ref": "e5"}}}
 ```
 
+**Targets:** `target: "embedded"` (default) uses Cybara's isolated browser shown in the chat
+preview. `target: "chrome"` drives the user's own Chrome with their signed-in sessions through the
+[Cybara browser extension](./browser-extension.md) or an attached debug-port Chrome. The target sticks
+for the session until it is changed.
+
+```json
+{"name": "browser", "args": {"action": "snapshot", "target": "chrome"}}
+{"name": "browser", "args": {"action": "open", "url": "https://mail.example.com", "target": "chrome"}}
+```
+
 ### web_search
 Search the web through the best configured backend, with a no-key fallback. Optional filters support domains, recency, location, and research-oriented result categories where the selected backend provides them.
 ```json

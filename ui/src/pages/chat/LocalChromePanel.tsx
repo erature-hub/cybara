@@ -67,10 +67,11 @@ export function LocalChromePanel(): React.JSX.Element {
     <section className="space-y-2 rounded-md border border-[var(--surface-border)] p-3">
       <header className="flex items-center gap-2">
         <Globe size={16} aria-hidden />
-        <h3 className="text-sm font-medium">Your own Chrome</h3>
+        <h3 className="text-sm font-medium">Chrome debug port</h3>
       </header>
       <p className="text-xs text-[var(--text-secondary)]">
-        Drive the Chrome you already use, with its real tabs and signed-in sessions.
+        Attach a Chrome started with a remote debugging port. Chrome only allows this for a separate
+        profile, so use the browser extension above for your everyday profile.
       </p>
       {status?.attached ? (
         <>

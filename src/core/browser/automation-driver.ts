@@ -1048,6 +1048,10 @@ class PuppeteerBrowserAdapter implements AutomationBrowser {
   }
 }
 
+export function wrapPlaywrightPage(page: Playwright.Page): AutomationPage {
+  return new PlaywrightPageAdapter(page);
+}
+
 export function wrapPlaywrightBrowser(browser: Playwright.Browser): AutomationBrowser {
   return new PlaywrightBrowserAdapter(browser);
 }

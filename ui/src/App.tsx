@@ -8,6 +8,7 @@ import { GatewayAuthGate } from "@/components/GatewayAuthGate";
 import { GatewayStartupFailure } from "@/components/GatewayStartupFailure";
 import { Sidebar, SidebarProvider, useSidebar } from "@/components/layout/Sidebar";
 import { ToastContainer } from "@/components/ui/Toast";
+import { BrowserExtensionPairingPrompt } from "@/components/browser/BrowserExtensionPairingPrompt";
 import { settingsApi, setupApi } from "@/lib/api";
 import {
   APP_HOTKEYS_CHANGED_EVENT,
@@ -383,6 +384,7 @@ function App() {
               </Routes>
             </Suspense>
             <ToastContainer />
+            <BrowserExtensionPairingPrompt />
           </div>
         </SidebarProvider>
       </GatewayAuthGate>

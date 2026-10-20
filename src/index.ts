@@ -38,6 +38,15 @@ import {
 import { agentManager } from "./core/agent";
 import { subscribeBrowserPreviewStream } from "./core/browser/preview-stream";
 import {
+  authorizeBrowserExtensionUpgrade,
+  BROWSER_EXTENSION_PROTOCOL,
+  BROWSER_EXTENSION_SOCKET_PATH,
+  type BrowserExtensionSocketData,
+  closeBrowserExtensionSocket,
+  messageBrowserExtensionSocket,
+  openBrowserExtensionSocket,
+} from "./api/browser-extension-socket";
+import {
   BrowserPreviewInputQueue,
   executeBrowserPreviewInput,
   parseBrowserPreviewInput,
@@ -400,7 +409,8 @@ type WsData =
       inputQueue?: BrowserPreviewInputQueue;
       cursorTracker?: BrowserPreviewCursorTracker;
       unsubscribePointer?: () => void;
-    };
+    }
+  | BrowserExtensionSocketData;
 
 function browserStreamPageId(pathname: string): string | null {
   const match = /^\/api\/browser\/tabs\/([^/]+)\/stream$/.exec(pathname);
@@ -571,6 +581,33 @@ function createGatewayServer(
             },
           });
         }
+      }
+
+      if (pathname === BROWSER_EXTENSION_SOCKET_PATH) {
+        const authorization = authorizeBrowserExtensionUpgrade(requestHeaders, directIp);
+        if (!authorization.ok) {
+          return new Response(JSON.stringify({ error: authorization.error }), {
+            status: authorization.status,
+            headers: {
+              "Content-Type": "application/json",
+              "Cache-Control": "no-store",
+              ...commonSecurityHeaders,
+            },
+          });
+        }
+        const upgraded = server.upgrade(req, {
+          data: {
+            kind: "extension",
+            mode: authorization.mode,
+            userAgent: requestHeaders["user-agent"],
+          },
+          headers: { "Sec-WebSocket-Protocol": BROWSER_EXTENSION_PROTOCOL },
+        });
+        if (upgraded) return undefined;
+        return new Response("WebSocket upgrade failed", {
+          status: 400,
+          headers: { "Content-Type": "text/plain; charset=utf-8", ...commonSecurityHeaders },
+        });
       }
 
       const browserStreamId = browserStreamPageId(pathname);
@@ -914,6 +951,10 @@ function createGatewayServer(
     websocket: {
       open(ws) {
         const data = ws.data as WsData;
+        if (data.kind === "extension") {
+          openBrowserExtensionSocket(ws);
+          return;
+        }
         if (data.kind === "status") {
           try {
             const sender = new StatusStreamSender({
@@ -1049,6 +1090,10 @@ function createGatewayServer(
       },
       message(ws, message) {
         const data = ws.data as WsData;
+        if (data.kind === "extension") {
+          messageBrowserExtensionSocket(ws, message);
+          return;
+        }
         if (data.kind === "status") {
           const text = typeof message === "string" ? message : Buffer.from(message).toString();
           if (text === "ping") {
@@ -1091,6 +1136,10 @@ function createGatewayServer(
       },
       close(ws) {
         const data = ws.data as WsData;
+        if (data.kind === "extension") {
+          closeBrowserExtensionSocket(ws);
+          return;
+        }
         if (data.kind === "status") {
           data.sender?.dispose();
           data.unsubscribe?.();
@@ -1278,6 +1327,7 @@ setAgentHandler(async (job) => {
     const message = job.payload.kind === "agentTurn" ? job.payload.message : String(job.payload);
     const result = await agentManager.message(agent.id, message, {
       workspaceDir: job.workspaceDir,
+      sessionId: `cron-${job.id}`,
     });
     console.log(`[Cron] agentTurn job ${job.id} completed: ${result.response.slice(0, 100)}...`);
     return { success: true };

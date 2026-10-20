@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Set up Cybara Browser Bridge</title>
+    <link rel="stylesheet" href="theme.css" />
+    <link rel="stylesheet" href="welcome.css" />
+  </head>
+  <body>
+    <main class="shell">
+      <header class="brand hero-brand">
+        <img src="icons/icon-128.png" alt="" width="44" height="44" />
+        <div>
+          <p class="brand-name">Cybara Browser Bridge</p>
+          <p class="brand-sub">Let your agents work in the tabs you choose</p>
+        </div>
+      </header>
+
+      <ol class="steps" aria-label="Setup progress">
+        <li id="step-find" class="step"><span class="step-mark">1</span>Find Cybara</li>
+        <li id="step-approve" class="step"><span class="step-mark">2</span>Approve</li>
+        <li id="step-use" class="step"><span class="step-mark">3</span>Start using it</li>
+      </ol>
+
+      <section id="setup" class="card panel">
+        <div id="pairing" class="pairing">
+          <div data-phase="idle">
+            <h1>Connect to Cybara</h1>
+            <p class="lead muted">
+              Make sure the Cybara app is open on this computer, then connect. You'll approve the
+              connection once inside Cybara.
+            </p>
+            <button type="button" class="btn btn-primary" data-action="start">Connect to Cybara</button>
+          </div>
+          <div data-phase="searching" hidden>
+            <h1>Looking for Cybara…</h1>
+            <p class="lead status-line"><span class="spinner"></span>Checking this computer for a running Cybara app.</p>
+          </div>
+          <div data-phase="waiting" hidden>
+            <h1>Approve in Cybara</h1>
+            <p class="lead muted">
+              Cybara is showing a <strong>Connect browser</strong> request. Check that it shows this
+              code, then click <strong>Approve</strong>.
+            </p>
+            <div class="code code-large" data-pairing-code></div>
+            <p class="muted small" data-pairing-found></p>
+            <p class="muted small">
+              Don't see it? Open Cybara and go to <strong>Settings → Safety → Browser extension</strong>.
+            </p>
+            <button type="button" class="btn-link" data-action="cancel">Cancel</button>
+          </div>
+          <div data-phase="problem" hidden>
+            <h1>Couldn't connect yet</h1>
+            <p class="notice" data-pairing-problem></p>
+            <button type="button" class="btn btn-primary" data-action="start">Try again</button>
+          </div>
+        </div>
+      </section>
+
+      <section id="done" class="card panel" hidden>
+        <div class="success">
+          <span class="success-mark" aria-hidden="true">
+            <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5" /></svg>
+          </span>
+          <div>
+            <h1>You're connected</h1>
+            <p class="muted">Cybara can now work in the tabs you share. Here's how to use it.</p>
+          </div>
+        </div>
+        <div class="tips">
+          <article class="tip-card">
+            <p class="tip-step">1</p>
+            <h2>Pin the extension</h2>
+            <p class="muted">
+              Click the puzzle icon in Chrome's toolbar, then the pin next to
+              <strong>Cybara Browser Bridge</strong> so it's always one click away.
+            </p>
+          </article>
+          <article class="tip-card">
+            <p class="tip-step">2</p>
+            <h2>Share a tab</h2>
+            <p class="muted">
+              On any website, click the Cybara icon and turn on <strong>Share</strong>. Turn it off
+              any time to take the tab back.
+            </p>
+          </article>
+          <article class="tip-card">
+            <p class="tip-step">3</p>
+            <h2>Just ask</h2>
+            <p class="muted">
+              Tell any Cybara agent <strong>"use my Chrome to…"</strong>. It works in your shared tab
+              or opens its own in a Cybara tab group.
+            </p>
+          </article>
+        </div>
+        <button id="close-button" type="button" class="btn btn-primary">Done</button>
+      </section>
+
+      <p class="footnote muted">
+        Agents only reach tabs you share or tabs Cybara opens. Chrome shows a banner while a tab is
+        being controlled, and choosing Cancel there stops it immediately.
+      </p>
+    </main>
+    <script src="welcome.js" type="module"></script>
+  </body>
+</html>

@@ -61,8 +61,28 @@ describe("app release surface wiring", () => {
     expect(versionWorkflow).toContain("apps/mobile/app.json");
     expect(versionWorkflow).toContain("nix/release.nix");
     expect(versionWorkflow).toContain(
-      "git add package.json ui/package.json src-tauri/Cargo.toml src-tauri/tauri.conf.json apps/mobile/app.json nix/release.nix"
+      "git add package.json ui/package.json src-tauri/Cargo.toml src-tauri/tauri.conf.json apps/mobile/app.json nix/release.nix apps/browser-extension/manifest.json"
     );
+  });
+
+  test("the version tag workflow commits every file version:sync rewrites", () => {
+    const versionScript = read("scripts/version.ts");
+    const versionWorkflow = read(".github/workflows/main-version-tag.yml");
+    const syncedFiles = [...versionScript.matchAll(/changed\.push\("([^"]+)"\)/g)].map(
+      (match) => match[1]
+    );
+    const stageLine = versionWorkflow
+      .split("\n")
+      .find((line) => line.trim().startsWith("git add "));
+    const diffLine = versionWorkflow
+      .split("\n")
+      .find((line) => line.includes("git diff --quiet --"));
+
+    expect(syncedFiles).toContain("apps/browser-extension/manifest.json");
+    for (const file of syncedFiles) {
+      expect(stageLine).toContain(file);
+      expect(diffLine).toContain(file);
+    }
   });
 
   test("release workflow keeps mobile Expo bundles gated by dependency and type checks", () => {
@@ -237,7 +257,18 @@ describe("app release surface wiring", () => {
     expect(workflow).toContain("smoke-cli-darwin-x64:");
     expect(workflow).toContain("name: cybara-darwin-x64");
     expect(workflow).toContain("bash scripts/smoke-standalone-cli.sh ./cybara-darwin-x64");
-    expect(workflow).toContain("needs: [build-cli, smoke-cli-darwin-x64, build-mobile]");
+    expect(workflow).toContain(
+      "needs: [build-cli, smoke-cli-darwin-x64, build-mobile, build-browser-extension]"
+    );
+  });
+
+  test("releases package the browser extension through the shared checksum flow", () => {
+    const workflow = read(".github/workflows/release.yml");
+
+    expect(workflow).toContain("build-browser-extension:");
+    expect(workflow).toContain("run: bun run package:browser-extension");
+    expect(workflow).toContain("name: cybara-browser-extension");
+    expect(workflow).toContain("path: release/browser-extension/*.zip");
   });
 
   test("dev CI cross-compiles and smoke-tests the Darwin x64 CLI artifact", () => {

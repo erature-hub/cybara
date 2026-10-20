@@ -103,4 +103,36 @@ describe("chat tool constraints", () => {
       false
     );
   });
+
+  test("ends a restriction where the next instruction begins", () => {
+    expect(
+      constrainToolsForMessage(
+        "Don't use shell commands, open the browser and check the pricing page",
+        tools
+      )
+    ).toEqual(tools.filter((name) => name !== "exec" && name !== "process"));
+    expect(
+      constrainToolsForMessage(
+        "Avoid using computer use and open the browser to read the docs",
+        tools
+      )
+    ).toEqual([
+      "browser",
+      "exec",
+      "process",
+      "web_search",
+      "web_fetch",
+      "x_search",
+      "sessions_spawn",
+      "read",
+    ]);
+    expect(
+      constrainToolsForMessage("Do not use web search but use the browser for this", tools)
+    ).toEqual(tools.filter((name) => name !== "web_search" && name !== "x_search"));
+  });
+
+  test("keeps qualified tool prohibitions scoped to the qualifier", () => {
+    expect(messageDisallowsAllTools("Don't run tools that modify files, just browse.")).toBe(false);
+    expect(messageDisallowsAllTools("Do not use tools other than the browser.")).toBe(false);
+  });
 });

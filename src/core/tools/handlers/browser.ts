@@ -24,6 +24,14 @@ import {
   waitFor,
 } from "../../browser/cdp-helpers";
 import * as profileManager from "../../browser/profiles";
+import { profileNameForSession } from "../../browser/profiles";
+import {
+  openUserChromePage,
+  USER_CHROME_UNAVAILABLE_MESSAGE,
+  USER_CHROME_USAGE_HINT,
+  userChromeAvailability,
+  userChromeSharedTabs,
+} from "../../browser/user-chrome";
 import * as pwManager from "../../browser/pw-manager";
 import { CONTENT_ROLES, INTERACTIVE_ROLES, STRUCTURAL_ROLES } from "../../browser/pw-role-snapshot";
 import { fetchPublicHttpUrl, type PublicHttpFetcher } from "../../outbound-url-policy";
@@ -75,16 +83,39 @@ export function getBrowserPageIdForSession(sessionId: string): string | null {
 
 const sessionPageCreations = new Map<string, Promise<string>>();
 
+type BrowserTarget = "embedded" | "chrome";
+const sessionTargets = new Map<string, BrowserTarget>();
+const sessionsThatUsedChrome = new Set<string>();
+
+function requestedBrowserTarget(args: Record<string, unknown>): BrowserTarget | null {
+  return args.target === "chrome" || args.target === "embedded" ? args.target : null;
+}
+
+function sessionBrowserTarget(sessionId: string): BrowserTarget {
+  return sessionTargets.get(sessionId) ?? "embedded";
+}
+
 export async function getOrCreateBrowserPageForSession(sessionId: string): Promise<string> {
+  const target = sessionBrowserTarget(sessionId);
   const existing = sessionPages.get(sessionId);
-  if (existing && pwManager.getPageById(existing)) return existing;
+  if (existing && pwManager.getPageById(existing)) {
+    if (pwManager.isExternalPage(existing) === (target === "chrome")) return existing;
+    sessionPages.delete(sessionId);
+    clearSessionRefs(sessionId);
+    await pwManager.closePage(existing).catch(() => false);
+  }
 
   const inFlight = sessionPageCreations.get(sessionId);
   if (inFlight) return inFlight;
 
   const creation = (async () => {
     try {
-      const pageId = await pwManager.createPage();
+      const pageId =
+        target === "chrome"
+          ? (await openUserChromePage({ allowTakeover: !sessionsThatUsedChrome.has(sessionId) }))
+              .pageId
+          : await pwManager.createPage();
+      if (target === "chrome") sessionsThatUsedChrome.add(sessionId);
       sessionPages.set(sessionId, pageId);
       return pageId;
     } finally {
@@ -95,13 +126,28 @@ export async function getOrCreateBrowserPageForSession(sessionId: string): Promi
   return creation;
 }
 
+export async function releaseBrowserForSession(sessionId: string): Promise<void> {
+  const pageId = sessionPages.get(sessionId);
+  sessionPages.delete(sessionId);
+  sessionTargets.delete(sessionId);
+  sessionsThatUsedChrome.delete(sessionId);
+  clearSessionRefs(sessionId);
+  if (pageId) await pwManager.closePage(pageId).catch(() => false);
+  await profileManager.stopBrowser(profileNameForSession(sessionId)).catch(() => undefined);
+}
+
 export function releaseBrowserPage(pageId: string): void {
   for (const [sessionId, sessionPageId] of sessionPages.entries()) {
     if (sessionPageId === pageId) sessionPages.delete(sessionId);
   }
 }
 
+function browserPageMode(pageId: string): "headless" | "chrome" {
+  return pwManager.isExternalPage(pageId) ? "chrome" : "headless";
+}
+
 function useEmbeddedBrowser(args: Record<string, unknown>): boolean {
+  if (args.target === "chrome") return true;
   return (
     args.headless !== false &&
     args.headless !== "false" &&
@@ -147,7 +193,7 @@ function isLocalBrowserHostname(value: string): boolean {
 async function getVisualPage(
   sessionId: string
 ): Promise<Awaited<ReturnType<typeof profileManager.getActivePage>>> {
-  const profileName = sessionId;
+  const profileName = profileNameForSession(sessionId);
 
   const profile = profileManager.getProfile(profileName);
   if (!profile?.running) {
@@ -182,15 +228,30 @@ export async function handleBrowser(
 ): Promise<unknown> {
   const action = args.action as string;
   const sessionId = context?.sessionId?.trim() || (args.sessionId as string) || "default";
+  const target = requestedBrowserTarget(args);
+  if (target === "chrome" && action !== "status") {
+    const availability = userChromeAvailability();
+    if (!availability.available)
+      throw new Error(availability.reason ?? USER_CHROME_UNAVAILABLE_MESSAGE);
+  }
+  if (target) sessionTargets.set(sessionId, target);
 
   switch (action) {
     case "status": {
       const status = await pwManager.getStatus();
+      const userChrome = userChromeAvailability();
       return {
         available: status.chromiumAvailable,
         running: status.running,
         pages: status.pages,
         headless: status.headless,
+        target: sessionBrowserTarget(sessionId),
+        userChrome: {
+          available: userChrome.available,
+          via: userChrome.source,
+          sharedTabs: userChromeSharedTabs(),
+          hint: userChrome.reason ?? USER_CHROME_USAGE_HINT,
+        },
         message: status.chromiumAvailable
           ? "Browser automation available via Playwright"
           : "Playwright not installed. Run: bun add playwright",
@@ -205,7 +266,7 @@ export async function handleBrowser(
 
       const useHeadless = useEmbeddedBrowser(args);
       const url = args.url as string | undefined;
-      const profileName = (args.profile as string) || sessionId;
+      const profileName = (args.profile as string) || profileNameForSession(sessionId);
 
       console.log(
         `[Browser] Start requested - headless: ${args.headless}, useHeadless: ${useHeadless}, url: ${url}`
@@ -221,8 +282,10 @@ export async function handleBrowser(
 
         return {
           success: true,
-          mode: "headless",
-          message: "Browser started in the embedded chat preview",
+          mode: browserPageMode(pageId),
+          message: pwManager.isExternalPage(pageId)
+            ? "Connected to the user's Chrome; actions run in a real tab they can watch"
+            : "Browser started in the embedded chat preview",
           pageId,
           url: url || undefined,
         };
@@ -283,11 +346,16 @@ export async function handleBrowser(
     }
 
     case "close_all": {
-      await pwManager.closeAll();
-      sessionPages.clear();
+      const pageId = sessionPages.get(sessionId);
+      if (pageId) {
+        await pwManager.closePage(pageId);
+        sessionPages.delete(sessionId);
+      }
+      clearSessionRefs(sessionId);
+      await profileManager.stopBrowser(profileNameForSession(sessionId));
       return {
         success: true,
-        message: "All browser pages and tabs closed",
+        message: "All browser pages and tabs for this session closed",
       };
     }
 
@@ -364,7 +432,7 @@ export async function handleBrowser(
     }
 
     case "profileTabs": {
-      const name = (args.profile as string) || sessionId;
+      const name = (args.profile as string) || profileNameForSession(sessionId);
       const tabs = profileManager.getProfilePages(name);
       return {
         success: true,
@@ -374,7 +442,7 @@ export async function handleBrowser(
     }
 
     case "openProfileTab": {
-      const name = (args.profile as string) || sessionId;
+      const name = (args.profile as string) || profileNameForSession(sessionId);
       const url = args.url as string;
       if (!url) throw new Error("URL required for openProfileTab action");
       const navigationUrl = await validateBrowserNavigationUrl(url);
@@ -390,7 +458,7 @@ export async function handleBrowser(
     }
 
     case "closeProfileTab": {
-      const name = (args.profile as string) || sessionId;
+      const name = (args.profile as string) || profileNameForSession(sessionId);
       const pageId = args.pageId as string;
       if (!pageId) throw new Error("pageId required for closeProfileTab action");
 
@@ -407,7 +475,16 @@ export async function handleBrowser(
 
     case "tabs": {
       const pageId = getBrowserPageIdForSession(sessionId);
-      const tabs = (await pwManager.getAllPages()).filter((tab) => !pageId || tab.id === pageId);
+      const tabs = pageId ? (await pwManager.getAllPages()).filter((tab) => tab.id === pageId) : [];
+      if (sessionBrowserTarget(sessionId) === "chrome") {
+        return {
+          success: true,
+          target: "chrome",
+          tabs,
+          sharedTabs: userChromeSharedTabs(),
+          hint: USER_CHROME_USAGE_HINT,
+        };
+      }
       return {
         success: true,
         tabs,
@@ -429,13 +506,13 @@ export async function handleBrowser(
         });
         return {
           success: true,
-          mode: "headless",
+          mode: browserPageMode(pageId),
           pageId,
           ...result,
         };
       }
 
-      const profileName = (args.profile as string) || sessionId;
+      const profileName = (args.profile as string) || profileNameForSession(sessionId);
       console.log(`[Browser] Opening ${navigationUrl} in visual mode (profile: ${profileName})`);
 
       let profile = profileManager.getProfile(profileName);
@@ -462,7 +539,7 @@ export async function handleBrowser(
       if (!url) throw new Error("URL required for openVisual action");
       const navigationUrl = await validateBrowserNavigationUrl(url);
 
-      const profileName = (args.profile as string) || sessionId;
+      const profileName = (args.profile as string) || profileNameForSession(sessionId);
       console.log(`[Browser] openVisual: Opening ${navigationUrl} (profile: ${profileName})`);
 
       let profile = profileManager.getProfile(profileName);
@@ -488,9 +565,9 @@ export async function handleBrowser(
       const targetId = args.targetId as string;
       if (!targetId) throw new Error("targetId required for focus action");
 
-      const pages = await pwManager.getAllPages();
-      const tab = pages.find((t: { id: string }) => t.id === targetId);
-      if (!tab) throw new Error(`Tab not found: ${targetId}`);
+      if (targetId !== getBrowserPageIdForSession(sessionId)) {
+        throw new Error(`Tab not found: ${targetId}`);
+      }
 
       return {
         success: true,
@@ -505,7 +582,7 @@ export async function handleBrowser(
       const navigationUrl = await validateBrowserNavigationUrl(url);
 
       const useHeadless = useEmbeddedBrowser(args);
-      const profileName = (args.profile as string) || sessionId;
+      const profileName = (args.profile as string) || profileNameForSession(sessionId);
 
       if (useHeadless) {
         const pageId = await getOrCreateBrowserPageForSession(sessionId);
@@ -515,7 +592,7 @@ export async function handleBrowser(
         });
         return {
           success: true,
-          mode: "headless",
+          mode: browserPageMode(pageId),
           ...result,
         };
       }
@@ -574,7 +651,7 @@ export async function handleBrowser(
 
         return {
           success: true,
-          mode: "headless",
+          mode: browserPageMode(pageId),
           format,
           ...result,
           captchaDetected: captcha.detected,
@@ -754,7 +831,7 @@ export async function handleBrowser(
 
         return {
           success: true,
-          mode: "headless",
+          mode: browserPageMode(pageId),
           filePath: filePath,
           filename: filename,
           contentType: mimeType,

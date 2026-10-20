@@ -1,13 +1,17 @@
-import { connectPuppeteerBrowser } from "./automation-driver";
-import type { AutomationBrowser } from "./automation-driver";
 import { getBrowserSupervisionSettings, getBrowserSupervisionStatus } from "./supervision";
 
 export const DEFAULT_LOCAL_CHROME_CDP_PORT = 9222;
 const MIN_CDP_PORT = 1024;
 const MAX_CDP_PORT = 65_535;
 const PROBE_TIMEOUT_MS = 2_500;
-const CONNECT_TIMEOUT_MS = 20_000;
 const MAX_TARGET_URL_LENGTH = 2_048;
+
+interface ChromeListEntry {
+  id?: unknown;
+  type?: unknown;
+  title?: unknown;
+  url?: unknown;
+}
 
 interface ChromeVersionPayload {
   Browser?: unknown;
@@ -39,7 +43,7 @@ export function normalizeLocalChromePort(value: unknown): number {
 }
 
 export function localChromeLaunchHint(port: number): string {
-  return `Start Chrome with --remote-debugging-port=${port}, open http://localhost:${port} in your browser to confirm it is listening, then connect.`;
+  return `Start Chrome with --remote-debugging-port=${port} --user-data-dir=<a separate folder> (Chrome ignores the port for your default profile), open http://localhost:${port}/json/version to confirm it is listening, then connect. To use your everyday profile, install the Cybara browser extension instead.`;
 }
 
 function supervisionAllowsAttach(): string | null {
@@ -48,8 +52,8 @@ function supervisionAllowsAttach(): string | null {
   if (supervision.remoteRoutingEnabled) {
     return "Remote browser routing is enabled, so Cybara will not attach to a local Chrome.";
   }
-  if (status.owner !== "local") {
-    return "The active browser session is not owned locally, so Cybara will not attach to a local Chrome.";
+  if (status.owner === "remote") {
+    return "The active browser session is remote, so Cybara will not attach to a local Chrome.";
   }
   return null;
 }
@@ -81,33 +85,42 @@ export async function probeLocalChrome(
   }
 }
 
-let attached: { browser: AutomationBrowser; port: number } | null = null;
+let attachedPort: number | null = null;
+const changeListeners = new Set<(port: number | null) => void>();
 
 export function getAttachedLocalChromePort(): number | null {
-  return attached?.port ?? null;
+  return attachedPort;
+}
+
+export function onLocalChromeChange(listener: (port: number | null) => void): () => void {
+  changeListeners.add(listener);
+  return () => changeListeners.delete(listener);
+}
+
+function setAttachedPort(port: number | null): void {
+  if (attachedPort === port) return;
+  attachedPort = port;
+  for (const listener of changeListeners) {
+    try {
+      listener(port);
+    } catch (error) {
+      console.error("[Browser] Local Chrome listener failed:", error);
+    }
+  }
 }
 
 export async function localChromeStatus(): Promise<LocalChromeStatus> {
-  const port = attached?.port ?? DEFAULT_LOCAL_CHROME_CDP_PORT;
+  const port = attachedPort ?? DEFAULT_LOCAL_CHROME_CDP_PORT;
   const denial = supervisionAllowsAttach();
-  if (attached) {
-    return {
-      supported: true,
-      attached: true,
-      reachable: true,
-      product: null,
-      port,
-      targets: await attachedTargets(attached.browser),
-    };
-  }
   const probe = await probeLocalChrome(port);
+  if (attachedPort !== null && !probe.reachable) setAttachedPort(null);
   const status: LocalChromeStatus = {
     supported: true,
-    attached: false,
+    attached: attachedPort !== null,
     reachable: probe.reachable,
     product: probe.product,
     port,
-    targets: [],
+    targets: attachedPort !== null ? await listTargets(port) : [],
   };
   if (denial) status.reason = denial;
   else if (!probe.reachable)
@@ -115,27 +128,24 @@ export async function localChromeStatus(): Promise<LocalChromeStatus> {
   return status;
 }
 
-async function attachedTargets(browser: AutomationBrowser): Promise<LocalChromeTarget[]> {
-  const targets: LocalChromeTarget[] = [];
-  for (const page of await browser.pages()) {
-    const url = typeof page.url === "function" ? page.url() : "";
-    targets.push({
-      id: pageId(page),
-      title: truncate(pageTitle(page), 200),
-      url: truncate(url, MAX_TARGET_URL_LENGTH),
+async function listTargets(port: number): Promise<LocalChromeTarget[]> {
+  try {
+    const response = await fetch(`http://127.0.0.1:${port}/json/list`, {
+      signal: AbortSignal.timeout(PROBE_TIMEOUT_MS),
     });
+    if (!response.ok) return [];
+    const entries = (await response.json()) as unknown;
+    if (!Array.isArray(entries)) return [];
+    return (entries as ChromeListEntry[])
+      .filter((entry) => entry.type === "page")
+      .map((entry) => ({
+        id: typeof entry.id === "string" ? entry.id : "",
+        title: truncate(typeof entry.title === "string" ? entry.title : "", 200),
+        url: truncate(typeof entry.url === "string" ? entry.url : "", MAX_TARGET_URL_LENGTH),
+      }));
+  } catch {
+    return [];
   }
-  return targets;
-}
-
-function pageId(page: unknown): string {
-  const candidate = page as { id?: unknown };
-  return typeof candidate.id === "string" ? candidate.id : "";
-}
-
-function pageTitle(page: unknown): string {
-  const candidate = page as { title?: unknown };
-  return typeof candidate.title === "string" ? candidate.title : "";
 }
 
 function truncate(value: string, maximum: number): string {
@@ -147,7 +157,6 @@ export async function attachToLocalChrome(
 ): Promise<LocalChromeStatus> {
   const denial = supervisionAllowsAttach();
   if (denial) throw new Error(denial);
-  if (attached) await detachFromLocalChrome();
   const port = normalizeLocalChromePort(options.port);
   const probe = await probeLocalChrome(port);
   if (!probe.reachable) {
@@ -155,25 +164,11 @@ export async function attachToLocalChrome(
       `No Chrome debugger is listening on 127.0.0.1:${port}. ${localChromeLaunchHint(port)}`
     );
   }
-  const browser = await Promise.race([
-    connectPuppeteerBrowser({ endpoint: `http://127.0.0.1:${port}` }),
-    new Promise<never>((_resolve, reject) =>
-      setTimeout(() => reject(new Error("Timed out connecting to Chrome")), CONNECT_TIMEOUT_MS)
-    ),
-  ]);
-  attached = { browser, port };
+  setAttachedPort(port);
   return localChromeStatus();
 }
 
 export async function detachFromLocalChrome(): Promise<LocalChromeStatus> {
-  const current = attached;
-  attached = null;
-  if (current) {
-    try {
-      await current.browser.disconnect();
-    } catch {
-      void 0;
-    }
-  }
+  setAttachedPort(null);
   return localChromeStatus();
 }

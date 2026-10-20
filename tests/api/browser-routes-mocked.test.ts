@@ -77,6 +77,8 @@ mock.module("../../src/core/browser/pw-manager", () => ({
     return "tab-created";
   },
   getPageById: (id: string) => (id === "tab-created" ? { id } : undefined),
+  isExternalPage: () => false,
+  registerExternalPage: () => "external-page",
   closePage: async (id: string) => {
     browserMockState.closePageCalls.push(id);
     return id !== "missing";

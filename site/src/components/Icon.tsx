@@ -35,7 +35,8 @@ export type IconName =
   | "cursor"
   | "clock"
   | "menu"
-  | "close";
+  | "close"
+  | "extension";
 
 interface IconProps {
   name: IconName;
@@ -205,6 +206,9 @@ const PATHS: Record<IconName, React.ReactNode> = {
       <path d="m12 14 4-4" />
       <path d="M3.34 19a10 10 0 1 1 17.32 0" />
     </>
+  ),
+  extension: (
+    <path d="M10 3.5a2 2 0 1 1 4 0V5h3a2 2 0 0 1 2 2v3h-1.5a2 2 0 1 0 0 4H19v3a2 2 0 0 1-2 2h-3v-1.5a2 2 0 1 0-4 0V19H7a2 2 0 0 1-2-2v-3h1.5a2 2 0 1 0 0-4H5V7a2 2 0 0 1 2-2h3Z" />
   ),
   plug: (
     <>

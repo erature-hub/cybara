@@ -198,12 +198,23 @@ interface AgentExecutionOptions {
   orchestrationState?: ToolOrchestrationState;
 }
 
-interface RunningAgentState {
+interface AgentConversation {
   agent: Agent;
+  messages: AgentMessage[];
+}
+
+interface RunningAgentState extends AgentConversation {
   startedAt: Date;
   pid: number;
-  messages: AgentMessage[];
   lastActive: Date;
+  sessions: Map<string, AgentMessage[]>;
+}
+
+const MAX_KEYED_AGENT_CONVERSATIONS = 64;
+
+function replaceSystemMessage(messages: AgentMessage[], systemPrompt: string): void {
+  if (messages[0]?.role === "system") messages[0] = { role: "system", content: systemPrompt };
+  else messages.unshift({ role: "system", content: systemPrompt });
 }
 
 type ResolvedProvider = NonNullable<ReturnType<typeof providerManager.getWithCredentials>>;
@@ -815,17 +826,14 @@ class AgentManager extends AgentProviderRuntime {
     return { ...existing, ...updated } as Agent;
   }
 
-  async start(id: string): Promise<boolean> {
-    const agent = this.get(id);
-    if (!agent) return false;
-
+  private async buildRunningSystemPrompt(agent: Agent): Promise<string> {
     const homeDir = config.getDefaultWorkspaceDir();
 
     const allSkills = await loadAllSkills({ workspaceDir: homeDir });
     const context = createEligibilityContext();
     const eligibleSkills = filterEligibleSkills(allSkills, context);
 
-    const systemPrompt = buildSystemPrompt({
+    return buildSystemPrompt({
       workspaceDir: homeDir,
       agentData: {
         name: agent.name,
@@ -839,6 +847,13 @@ class AgentManager extends AgentProviderRuntime {
       contextFiles: getBootstrapContextFiles(homeDir),
       sandboxInfo: getSandboxPromptInfo(homeDir),
     });
+  }
+
+  async start(id: string): Promise<boolean> {
+    const agent = this.get(id);
+    if (!agent) return false;
+
+    const systemPrompt = await this.buildRunningSystemPrompt(agent);
 
     const runningState: RunningAgentState = {
       agent: { ...agent, system_prompt: systemPrompt },
@@ -851,6 +866,7 @@ class AgentManager extends AgentProviderRuntime {
         },
       ],
       lastActive: new Date(),
+      sessions: new Map(),
     };
 
     this.runningAgents.set(id, runningState);
@@ -888,6 +904,7 @@ class AgentManager extends AgentProviderRuntime {
     }
 
     state.lastActive = new Date();
+    await this.refreshRunningAgent(id, state);
 
     if (isMixtureOfAgentsRoutingActive()) {
       const moa = await import("./tools/handlers/mixture-of-agents");
@@ -908,18 +925,53 @@ class AgentManager extends AgentProviderRuntime {
       }
     }
 
-    state.messages.push({ role: "user", content });
+    const conversation = this.conversationFor(state, options?.sessionId);
+    conversation.messages.push({ role: "user", content });
 
-    await this.maybeCompactConversation(state);
+    await this.maybeCompactConversation(conversation);
 
-    const result = await this.executeWithState(state, options);
+    const result = await this.executeWithState(conversation, options);
 
-    state.messages.push({ role: "assistant", content: result.response });
+    conversation.messages.push({ role: "assistant", content: result.response });
+    this.storeConversation(state, options?.sessionId, conversation);
 
     return result;
   }
 
-  private async maybeCompactConversation(state: RunningAgentState): Promise<void> {
+  private async refreshRunningAgent(id: string, state: RunningAgentState): Promise<void> {
+    const latest = this.get(id);
+    if (!latest) return;
+    const systemPrompt = await this.buildRunningSystemPrompt(latest);
+    state.agent = { ...latest, system_prompt: systemPrompt };
+    replaceSystemMessage(state.messages, systemPrompt);
+    for (const messages of state.sessions.values()) replaceSystemMessage(messages, systemPrompt);
+  }
+
+  private conversationFor(state: RunningAgentState, sessionId?: string): AgentConversation {
+    const key = sessionId?.trim();
+    if (!key) return state;
+    const existing = state.sessions.get(key);
+    const messages = existing ?? [{ role: "system", content: state.agent.system_prompt ?? "" }];
+    return { agent: state.agent, messages };
+  }
+
+  private storeConversation(
+    state: RunningAgentState,
+    sessionId: string | undefined,
+    conversation: AgentConversation
+  ): void {
+    const key = sessionId?.trim();
+    if (!key) return;
+    state.sessions.delete(key);
+    state.sessions.set(key, conversation.messages);
+    while (state.sessions.size > MAX_KEYED_AGENT_CONVERSATIONS) {
+      const oldest = state.sessions.keys().next().value;
+      if (oldest === undefined) break;
+      state.sessions.delete(oldest);
+    }
+  }
+
+  private async maybeCompactConversation(state: AgentConversation): Promise<void> {
     try {
       const messages = state.messages;
       const systemCount = messages[0]?.role === "system" ? 1 : 0;
@@ -1028,7 +1080,7 @@ class AgentManager extends AgentProviderRuntime {
   }
 
   private async executeWithState(
-    state: RunningAgentState,
+    state: AgentConversation,
     options?: { workspaceDir?: string; sessionId?: string; useMemory?: boolean }
   ): Promise<{ response: string; thinking?: string }> {
     const { agent, messages } = state;
@@ -1128,6 +1180,7 @@ class AgentManager extends AgentProviderRuntime {
     if (!state) return false;
 
     state.messages = state.messages.filter((m) => m.role === "system");
+    state.sessions.clear();
     return true;
   }
 

@@ -75,6 +75,7 @@ interface BrowserPage {
   id: string;
   title?: string;
   url?: string;
+  source?: "embedded" | "chrome";
 }
 
 interface BrowserCursor {
@@ -156,6 +157,7 @@ function parseBrowserPage(value: unknown): BrowserPage | null {
     id: record.id,
     title: typeof record.title === "string" ? record.title : undefined,
     url: typeof record.url === "string" ? record.url : undefined,
+    source: record.source === "chrome" || record.source === "embedded" ? record.source : undefined,
   };
 }
 
@@ -441,7 +443,8 @@ export function ChatWorkspaceBrowser({
       if (
         current?.id === nextPage?.id &&
         current?.title === nextPage?.title &&
-        current?.url === nextPage?.url
+        current?.url === nextPage?.url &&
+        current?.source === nextPage?.source
       ) {
         return current;
       }
@@ -1084,7 +1087,7 @@ export function ChatWorkspaceBrowser({
       className="flex h-full min-h-0 flex-col bg-[var(--chat-environment-panel-bg)]"
       data-browser-session-id={browserSessionId}
     >
-      {thumbnail ? null : (
+      {thumbnail || page?.source === "chrome" ? null : (
         <BrowserDataImport
           tabId={page?.id}
           url={page?.url}

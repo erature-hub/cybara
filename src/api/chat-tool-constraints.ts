@@ -40,10 +40,18 @@ const restrictedToolGroups: Array<{
 ];
 
 const restrictionClausePattern =
-  /\b(?:do not use|don't use|dont use|never use|without using|avoid using)\b([^.!?\n]{1,240})/gi;
+  /\b(?:do not use|don't use|dont use|never use|without using|avoid using)\b([^.!?\n;]{1,240})/gi;
+
+const restrictionClauseBoundary =
+  /\b(?:but|instead|rather|except)\b|(?:,\s*|\b(?:and|then|so|just)\s+)(?:(?:then|just|please)\s+)*(?:open|go|navigate|visit|browse|use|check|search|click|take|look|find|read|run|launch|start|try|do|make|write|tell|show|get|grab|capture|screenshot|fill|log|sign|answer|reply|respond)\b/i;
+
+function restrictedObject(clause: string): string {
+  const boundary = restrictionClauseBoundary.exec(clause);
+  return boundary ? clause.slice(0, boundary.index) : clause;
+}
 
 const allToolsRestrictionPatterns = [
-  /(?:^|[.!?]\s+|\b(?:and|but|please)\s+)(?:please\s+)?(?:do not|don't|dont|never)\s+(?:use|call|invoke|run)\s+(?:any\s+)?tools?\b/i,
+  /(?:^|[.!?]\s+|\b(?:and|but|please)\s+)(?:please\s+)?(?:do not|don't|dont|never)\s+(?:use|call|invoke|run)\s+(?:any\s+)?tools?\b(?!\s+(?:that|which|to|for|on|in|unless|except|other|besides|beyond|like)\b)/i,
   /\b(?:answer|respond|continue|proceed|work)\b[^.!?\n]{0,120}\bwithout\s+(?:using|calling|invoking|running)\s+(?:any\s+)?tools?\b/i,
 ];
 
@@ -71,7 +79,9 @@ export function constrainToolsForMessage(
   const candidates = exclusive
     ? allowedToolNames.filter((name) => exclusive.matches(name))
     : allowedToolNames;
-  const clauses = [...message.matchAll(restrictionClausePattern)].map((match) => match[1] || "");
+  const clauses = [...message.matchAll(restrictionClausePattern)].map((match) =>
+    restrictedObject(match[1] || "")
+  );
   if (clauses.length === 0) return exclusive ? candidates : undefined;
   const denied = restrictedToolGroups.filter((group) =>
     clauses.some((clause) => group.pattern.test(clause))

@@ -1,0 +1,161 @@
+body {
+  width: 360px;
+  padding: 14px;
+  background:
+    radial-gradient(120% 60% at 100% 0%, rgba(99, 102, 241, 0.14), transparent 60%),
+    var(--bg);
+}
+
+.top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.stack {
+  display: grid;
+  gap: 10px;
+}
+
+.hero h2 {
+  margin-bottom: 4px;
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.pairing {
+  margin-top: 14px;
+}
+
+.waiting {
+  text-align: center;
+}
+
+.small {
+  font-size: 12px;
+}
+
+.found {
+  margin: 6px 0 4px;
+}
+
+.problem {
+  display: grid;
+  gap: 10px;
+}
+
+.advanced summary {
+  color: var(--muted);
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.advanced[open] summary {
+  margin-bottom: 10px;
+  color: var(--text);
+}
+
+.advanced form {
+  display: grid;
+  gap: 6px;
+}
+
+.advanced label {
+  margin-top: 4px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.advanced .btn {
+  margin-top: 8px;
+}
+
+.tab-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.tab-text {
+  min-width: 0;
+  flex: 1;
+}
+
+.tab-title {
+  overflow: hidden;
+  margin-top: 4px;
+  font-size: 14px;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tab-url {
+  overflow: hidden;
+  color: var(--muted);
+  font-size: 12px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+#share-hint {
+  margin-top: 10px;
+}
+
+.shared-list {
+  display: grid;
+  gap: 6px;
+  margin: 8px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.shared-list li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 6px 8px;
+  border-radius: 8px;
+  background: var(--raised);
+}
+
+.shared-list span {
+  overflow: hidden;
+  color: var(--text-secondary);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.shared-list button {
+  flex: none;
+  padding: 3px 9px;
+  font-size: 12px;
+}
+
+.tip {
+  padding: 10px 12px;
+  border: 1px dashed var(--border-strong);
+  border-radius: var(--radius);
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.tip strong {
+  color: var(--text-secondary);
+  font-weight: 600;
+}
+
+.footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 2px 2px 0;
+  font-size: 12px;
+}
+
+#error {
+  margin-top: 10px;
+}

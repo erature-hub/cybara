@@ -160,7 +160,7 @@ describe("center click reaches the real embedded page", () => {
     expect(result.success).toBe(false);
     const message = String(result.error);
     expect(
-      message.includes("--remote-debugging-port") || message.includes("not owned locally")
+      message.includes("--remote-debugging-port") || message.includes("session is remote")
     ).toBe(true);
     const after = (await api("/api/browser/local-chrome")).status as { attached: boolean };
     expect(after.attached).toBe(false);
