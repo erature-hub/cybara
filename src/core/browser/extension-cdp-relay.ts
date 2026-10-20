@@ -62,6 +62,8 @@ export class ExtensionCdpRelay {
   private readonly tabSessions = new Map<number, TabSession>();
   private readonly attaching = new Map<number, Promise<TabSession>>();
   private readonly ownedTabs = new Set<number>();
+  private readonly browserSessions = new Set<string>();
+  private readonly pageSessions = new Map<string, number>();
   private autoAttach = false;
   private closed = false;
   private readonly unsubscribe: () => void;
@@ -101,6 +103,8 @@ export class ExtensionCdpRelay {
     this.unsubscribe();
     const tabs = Array.from(this.tabSessions.keys());
     this.tabSessions.clear();
+    this.browserSessions.clear();
+    this.pageSessions.clear();
     for (const tabId of tabs) {
       void this.bridge.request("debugger.detach", { tabId }).catch(() => undefined);
     }
@@ -131,9 +135,19 @@ export class ExtensionCdpRelay {
     if (REFUSED_METHODS.has(method)) {
       throw new Error(`${method} is not available when Cybara drives your own Chrome.`);
     }
-    if (!sessionId) {
+    if (!sessionId || this.browserSessions.has(sessionId)) {
       if (ACKNOWLEDGED_METHODS.has(method)) return {};
       switch (method) {
+        case "Target.attachToBrowserTarget": {
+          const browserSession = `cybara-browser-${randomUUID()}`;
+          this.browserSessions.add(browserSession);
+          return { sessionId: browserSession };
+        }
+        case "Target.attachToTarget":
+          return this.attachPageSession(typeof params.targetId === "string" ? params.targetId : "");
+        case "Target.detachFromTarget":
+          if (typeof params.sessionId === "string") this.pageSessions.delete(params.sessionId);
+          return {};
         case "Browser.getVersion":
           return this.browserVersion();
         case "Target.setAutoAttach":
@@ -163,6 +177,10 @@ export class ExtensionCdpRelay {
       }
       return await this.sendBrowserCommand(method, params);
     }
+    const pageSessionTab = this.pageSessions.get(sessionId);
+    if (pageSessionTab !== undefined) {
+      return await this.bridge.request("debugger.send", { tabId: pageSessionTab, method, params });
+    }
     const tabSession = this.findBySession(sessionId);
     if (tabSession && method === "Target.getTargetInfo" && !params.targetId) {
       return { targetInfo: tabSession.targetInfo };
@@ -175,6 +193,14 @@ export class ExtensionCdpRelay {
       method,
       params,
     });
+  }
+
+  private attachPageSession(targetId: string): { sessionId: string } {
+    const tabId = this.tabIdForTarget(targetId);
+    if (tabId === null) throw new Error(`No shared tab with target id ${targetId}.`);
+    const sessionId = `cybara-page-${randomUUID()}`;
+    this.pageSessions.set(sessionId, tabId);
+    return { sessionId };
   }
 
   private browserVersion(): Record<string, string> {
@@ -295,6 +321,14 @@ export class ExtensionCdpRelay {
     this.ownedTabs.delete(tabId);
     if (!session) return;
     this.tabSessions.delete(tabId);
+    for (const [pageSession, pageTabId] of this.pageSessions) {
+      if (pageTabId !== tabId) continue;
+      this.pageSessions.delete(pageSession);
+      this.send({
+        method: "Target.detachedFromTarget",
+        params: { sessionId: pageSession, targetId: session.targetInfo.targetId },
+      });
+    }
     this.send({
       method: "Target.detachedFromTarget",
       params: { sessionId: session.sessionId, targetId: session.targetInfo.targetId },
@@ -321,5 +355,11 @@ export class ExtensionCdpRelay {
       params: event.params ?? {},
       sessionId: event.sessionId ?? session.sessionId,
     });
+    if (event.sessionId) return;
+    for (const [pageSession, pageTabId] of this.pageSessions) {
+      if (pageTabId === event.tabId) {
+        this.send({ method: event.method, params: event.params ?? {}, sessionId: pageSession });
+      }
+    }
   }
 }

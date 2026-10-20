@@ -599,24 +599,36 @@ export function getPageById(id: string): Page | undefined {
   return legacyPages.get(id);
 }
 
-export async function getAllPages(): Promise<Array<{ id: string; url: string; title: string }>> {
-  const result: Array<{ id: string; url: string; title: string }> = [];
+export type BrowserPageSource = "embedded" | "chrome";
+
+export interface BrowserPageSummary {
+  id: string;
+  url: string;
+  title: string;
+  source: BrowserPageSource;
+}
+
+function pageSource(id: string): BrowserPageSource {
+  return externalPageReleasers.has(id) ? "chrome" : "embedded";
+}
+
+export async function getAllPages(): Promise<BrowserPageSummary[]> {
+  const result: BrowserPageSummary[] = [];
   for (const [id, page] of legacyPages.entries()) {
     result.push({
       id,
       url: page.url(),
       title: await page.title(),
+      source: pageSource(id),
     });
   }
   return result;
 }
 
-export async function getPageSummary(
-  pageId: string
-): Promise<{ id: string; url: string; title: string } | null> {
+export async function getPageSummary(pageId: string): Promise<BrowserPageSummary | null> {
   const page = getPageById(pageId) || getPageById("default");
   if (!page) return null;
-  return { id: pageId, url: page.url(), title: await page.title() };
+  return { id: pageId, url: page.url(), title: await page.title(), source: pageSource(pageId) };
 }
 
 export async function closePage(id: string): Promise<boolean> {

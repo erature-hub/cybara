@@ -142,6 +142,43 @@ describe("browser extension CDP relay", () => {
     expect(requests.at(-1)?.params).toMatchObject({ tabId: 7, sessionId: "child-1" });
   });
 
+  test("supports separate CDP sessions so the chat preview can screencast a shared tab", async () => {
+    const { bridge, socket, relay, outbound, requests } = connectFakeExtension([7]);
+    await relay.handle({ id: 1, method: "Target.setAutoAttach", params: {} });
+    await relay.handle({ id: 2, method: "Target.attachToBrowserTarget" });
+    const { sessionId: browserSession } = resultFor(outbound, 2) as { sessionId: string };
+    await relay.handle({
+      id: 3,
+      method: "Target.attachToTarget",
+      params: { targetId: "target-7", flatten: true },
+      sessionId: browserSession,
+    });
+    const { sessionId: pageSession } = resultFor(outbound, 3) as { sessionId: string };
+
+    await relay.handle({ id: 4, method: "Page.startScreencast", sessionId: pageSession });
+    expect(resultFor(outbound, 4)).toEqual({ echoed: "Page.startScreencast", sessionId: null });
+    expect(requests.at(-1)?.params).toMatchObject({ tabId: 7 });
+
+    bridge.handleMessage(
+      socket,
+      JSON.stringify({
+        type: "event",
+        event: "debugger.event",
+        tabId: 7,
+        method: "Page.screencastFrame",
+        params: { data: "AAAA", sessionId: 1 },
+      })
+    );
+    expect(
+      outbound.some(
+        (message) =>
+          "method" in message &&
+          message.method === "Page.screencastFrame" &&
+          message.sessionId === pageSession
+      )
+    ).toBe(true);
+  });
+
   test("never lets the agent close or crash the user's browser", async () => {
     const { relay, outbound, requests } = connectFakeExtension([7]);
     await relay.handle({ id: 1, method: "Browser.close" });

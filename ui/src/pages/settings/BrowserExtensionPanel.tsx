@@ -124,13 +124,16 @@ export function BrowserExtensionPanel(): React.JSX.Element {
             {status.client?.product ?? "Chrome"} · extension {status.client?.extensionVersion}
           </p>
           {sharedTabs.length > 0 ? (
-            <ul className="max-h-32 space-y-1 overflow-y-auto text-[var(--text-secondary)]">
-              {sharedTabs.map((tab) => (
-                <li key={tab.tabId} className="truncate">
-                  {tab.title || tab.url}
-                </li>
-              ))}
-            </ul>
+            <>
+              <p className="pt-1 font-medium">Shared tabs</p>
+              <ul className="max-h-32 space-y-1 overflow-y-auto text-[var(--text-secondary)]">
+                {sharedTabs.map((tab) => (
+                  <li key={tab.tabId} className="truncate">
+                    {tab.title || tab.url}
+                  </li>
+                ))}
+              </ul>
+            </>
           ) : (
             <p className="text-[var(--text-muted)]">
               No tabs shared yet. Agents will open their own tab in your Chrome when asked.

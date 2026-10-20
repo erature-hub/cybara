@@ -53,7 +53,8 @@ function renderSharedTabs(tabs) {
 function render(state) {
   elements.dot.dataset.state = state.status;
   elements.statusText.textContent = STATUS_TEXT[state.status] ?? state.status;
-  elements.error.hidden = !state.error || state.status === "connected";
+  elements.error.hidden =
+    !state.error || state.status === "connected" || state.status === "needs-token";
   elements.error.textContent = state.error ?? "";
   if (document.activeElement !== elements.gatewayUrl) elements.gatewayUrl.value = state.gatewayUrl;
   elements.token.placeholder = state.hasToken ? "Saved — paste to replace" : "Paste from Settings → Browser";
@@ -72,9 +73,10 @@ function render(state) {
         ? "Stop sharing this tab"
         : "Share this tab with Cybara";
     elements.shareButton.disabled = tab.owned || (!tab.shared && !tab.shareable);
-    elements.shareHint.textContent = tab.shareable
-      ? "Agents can read and act in shared tabs using your signed-in session. Chrome shows a banner while a tab is being controlled."
-      : "Only regular web pages can be shared.";
+    elements.shareHint.textContent =
+      tab.shareable || tab.shared || tab.owned
+        ? "Agents can read and act in shared tabs using your signed-in session. Chrome shows a banner while a tab is being controlled."
+        : "Only regular web pages can be shared.";
   }
   renderSharedTabs(state.sharedTabs ?? []);
 }
