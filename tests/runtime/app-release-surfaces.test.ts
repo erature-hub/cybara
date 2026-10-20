@@ -237,7 +237,18 @@ describe("app release surface wiring", () => {
     expect(workflow).toContain("smoke-cli-darwin-x64:");
     expect(workflow).toContain("name: cybara-darwin-x64");
     expect(workflow).toContain("bash scripts/smoke-standalone-cli.sh ./cybara-darwin-x64");
-    expect(workflow).toContain("needs: [build-cli, smoke-cli-darwin-x64, build-mobile]");
+    expect(workflow).toContain(
+      "needs: [build-cli, smoke-cli-darwin-x64, build-mobile, build-browser-extension]"
+    );
+  });
+
+  test("releases package the browser extension through the shared checksum flow", () => {
+    const workflow = read(".github/workflows/release.yml");
+
+    expect(workflow).toContain("build-browser-extension:");
+    expect(workflow).toContain("run: bun run package:browser-extension");
+    expect(workflow).toContain("name: cybara-browser-extension");
+    expect(workflow).toContain("path: release/browser-extension/*.zip");
   });
 
   test("dev CI cross-compiles and smoke-tests the Darwin x64 CLI artifact", () => {
