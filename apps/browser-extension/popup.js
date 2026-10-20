@@ -1,34 +1,37 @@
+import { bindPairing, request } from "./pairing-view.js";
+
 const STATUS_TEXT = {
-  connected: "Connected to Cybara",
-  connecting: "Connecting…",
-  disconnected: "Not connected",
-  "needs-token": "Needs a pairing token",
-  error: "Connection error",
+  connected: "Connected",
+  connecting: "Connecting",
+  disconnected: "Offline",
+  "needs-token": "Not connected",
+  error: "Error",
 };
 
+const $ = (id) => document.getElementById(id);
 const elements = {
-  dot: document.getElementById("status-dot"),
-  statusText: document.getElementById("status-text"),
-  shareSection: document.getElementById("share-section"),
-  tabTitle: document.getElementById("tab-title"),
-  tabUrl: document.getElementById("tab-url"),
-  shareButton: document.getElementById("share-button"),
-  shareHint: document.getElementById("share-hint"),
-  sharedSection: document.getElementById("shared-section"),
-  sharedList: document.getElementById("shared-list"),
-  settings: document.getElementById("settings"),
-  form: document.getElementById("settings-form"),
-  gatewayUrl: document.getElementById("gateway-url"),
-  token: document.getElementById("token"),
-  forgetButton: document.getElementById("forget-button"),
-  error: document.getElementById("error"),
+  pill: $("status-pill"),
+  statusText: $("status-text"),
+  connectView: $("connect-view"),
+  connectedView: $("connected-view"),
+  offlineNotice: $("offline-notice"),
+  tabCard: $("tab-card"),
+  tabTitle: $("tab-title"),
+  tabUrl: $("tab-url"),
+  shareSwitch: $("share-switch"),
+  shareHint: $("share-hint"),
+  sharedSection: $("shared-section"),
+  sharedList: $("shared-list"),
+  gatewayLabel: $("gateway-label"),
+  disconnectButton: $("disconnect-button"),
+  form: $("settings-form"),
+  gatewayUrl: $("gateway-url"),
+  token: $("token"),
+  error: $("error"),
 };
 
 let activeTabId = null;
-
-function request(message) {
-  return chrome.runtime.sendMessage(message);
-}
+const renderPairing = bindPairing($("pairing"), () => void refresh());
 
 function renderSharedTabs(tabs) {
   elements.sharedList.replaceChildren();
@@ -40,7 +43,8 @@ function renderSharedTabs(tabs) {
     label.title = tab.url;
     const stop = document.createElement("button");
     stop.type = "button";
-    stop.textContent = "Stop sharing";
+    stop.className = "btn";
+    stop.textContent = "Stop";
     stop.addEventListener("click", async () => {
       await request({ type: "toggle-share", tabId: tab.tabId });
       await refresh();
@@ -50,44 +54,63 @@ function renderSharedTabs(tabs) {
   }
 }
 
-function render(state) {
-  elements.dot.dataset.state = state.status;
-  elements.statusText.textContent = STATUS_TEXT[state.status] ?? state.status;
-  elements.error.hidden =
-    !state.error || state.status === "connected" || state.status === "needs-token";
-  elements.error.textContent = state.error ?? "";
-  if (document.activeElement !== elements.gatewayUrl) elements.gatewayUrl.value = state.gatewayUrl;
-  elements.token.placeholder = state.hasToken ? "Saved — paste to replace" : "Paste from Settings → Browser";
-  elements.settings.open = !state.hasToken || state.status === "error";
-
-  const tab = state.activeTab;
+function renderTab(tab) {
   activeTabId = tab?.tabId ?? null;
-  elements.shareSection.hidden = !tab;
-  if (tab) {
-    elements.tabTitle.textContent = tab.title || "Untitled tab";
-    elements.tabUrl.textContent = tab.url;
-    elements.shareButton.dataset.shared = String(tab.shared);
-    elements.shareButton.textContent = tab.owned
-      ? "Opened by Cybara"
-      : tab.shared
-        ? "Stop sharing this tab"
-        : "Share this tab with Cybara";
-    elements.shareButton.disabled = tab.owned || (!tab.shared && !tab.shareable);
-    elements.shareHint.textContent =
-      tab.shareable || tab.shared || tab.owned
-        ? "Agents can read and act in shared tabs using your signed-in session. Chrome shows a banner while a tab is being controlled."
-        : "Only regular web pages can be shared.";
+  elements.tabCard.hidden = !tab;
+  if (!tab) return;
+  const shared = tab.shared || tab.owned;
+  elements.tabTitle.textContent = tab.title || "Untitled tab";
+  elements.tabUrl.textContent = tab.url;
+  elements.shareSwitch.setAttribute("aria-checked", String(shared));
+  elements.shareSwitch.disabled = tab.owned || (!tab.shared && !tab.shareable);
+  elements.shareHint.textContent = tab.owned
+    ? "Cybara opened this tab for an agent."
+    : tab.shared
+      ? "Shared. Agents can read and act in this tab with your signed-in session, and Chrome shows a banner while they do."
+      : tab.shareable
+        ? "Turn on to let Cybara agents work in this tab."
+        : "Browser pages like this one can't be shared. Open a website to share it.";
+}
+
+function render(state) {
+  const paired = state.hasToken;
+  elements.pill.dataset.state = paired ? state.status : "idle";
+  elements.statusText.textContent = paired
+    ? (STATUS_TEXT[state.status] ?? state.status)
+    : "Not connected";
+  elements.connectView.hidden = paired;
+  elements.connectedView.hidden = !paired;
+
+  if (!paired) {
+    renderPairing(state.pairing);
+    if (document.activeElement !== elements.gatewayUrl) elements.gatewayUrl.value = state.gatewayUrl;
+    const showError = Boolean(state.error) && state.pairing?.phase === "idle";
+    elements.error.hidden = !showError;
+    elements.error.textContent = showError ? state.error : "";
+    return;
   }
-  renderSharedTabs(state.sharedTabs ?? []);
+
+  elements.error.hidden = true;
+  const offline = state.status === "disconnected" || state.status === "error";
+  elements.offlineNotice.hidden = !offline;
+  elements.offlineNotice.textContent = offline ? state.error || "Cybara isn't reachable." : "";
+  elements.gatewayLabel.textContent = state.gatewayUrl.replace(/^https?:\/\//, "");
+  renderTab(state.activeTab);
+  renderSharedTabs((state.sharedTabs ?? []).filter((tab) => tab.tabId !== activeTabId));
 }
 
 async function refresh() {
   render(await request({ type: "get-state" }));
 }
 
-elements.shareButton.addEventListener("click", async () => {
+elements.shareSwitch.addEventListener("click", async () => {
   if (activeTabId === null) return;
   await request({ type: "toggle-share", tabId: activeTabId });
+  await refresh();
+});
+
+elements.disconnectButton.addEventListener("click", async () => {
+  await request({ type: "forget-token" });
   await refresh();
 });
 
@@ -99,11 +122,6 @@ elements.form.addEventListener("submit", async (event) => {
     token: elements.token.value,
   });
   elements.token.value = "";
-  await refresh();
-});
-
-elements.forgetButton.addEventListener("click", async () => {
-  await request({ type: "forget-token" });
   await refresh();
 });
 

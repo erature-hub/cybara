@@ -4,46 +4,111 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Cybara Browser Bridge</title>
+    <link rel="stylesheet" href="theme.css" />
     <link rel="stylesheet" href="popup.css" />
   </head>
   <body>
-    <header class="header">
-      <img src="icons/icon-32.png" alt="" width="24" height="24" />
-      <div class="title">
-        <h1>Cybara Browser Bridge</h1>
-        <p id="status-line" class="status"><span id="status-dot" class="dot"></span><span id="status-text">Checking…</span></p>
+    <header class="top">
+      <div class="brand">
+        <img src="icons/icon-48.png" alt="" width="30" height="30" />
+        <div>
+          <p class="brand-name">Cybara</p>
+          <p class="brand-sub">Browser Bridge</p>
+        </div>
       </div>
+      <span id="status-pill" class="pill" data-state="disconnected"
+        ><span class="dot"></span><span id="status-text">Checking…</span></span
+      >
     </header>
 
-    <section id="share-section" class="card" hidden>
-      <p class="label">This tab</p>
-      <p id="tab-title" class="tab-title"></p>
-      <p id="tab-url" class="tab-url"></p>
-      <button id="share-button" type="button" class="primary">Share this tab with Cybara</button>
-      <p id="share-hint" class="hint">Agents can read and act in shared tabs using your signed-in session. Chrome shows a banner while a tab is being controlled.</p>
-    </section>
-
-    <section id="shared-section" class="card" hidden>
-      <p class="label">Shared with Cybara</p>
-      <ul id="shared-list" class="shared-list"></ul>
-    </section>
-
-    <details id="settings" class="card">
-      <summary>Connection</summary>
-      <form id="settings-form">
-        <label for="gateway-url">Cybara address</label>
-        <input id="gateway-url" type="url" placeholder="http://127.0.0.1:4269" autocomplete="off" required />
-        <label for="token">Pairing token</label>
-        <input id="token" type="password" placeholder="Paste from Settings → Browser" autocomplete="off" />
-        <p class="hint">Find the token in Cybara under Settings → Browser → Browser extension.</p>
-        <div class="row">
-          <button type="submit" class="primary">Save and connect</button>
-          <button id="forget-button" type="button" class="ghost">Forget token</button>
+    <main id="connect-view" class="stack" hidden>
+      <section class="card hero">
+        <h2>Connect your browser</h2>
+        <p class="muted">
+          Let Cybara agents work in the tabs you choose, using the accounts you're already signed
+          in to. Nothing is shared until you say so.
+        </p>
+        <div id="pairing" class="pairing">
+          <div data-phase="idle">
+            <button type="button" class="btn btn-primary btn-block" data-action="start">
+              Connect to Cybara
+            </button>
+          </div>
+          <div data-phase="searching" class="status-line" hidden>
+            <span class="spinner"></span><span>Looking for Cybara on this computer…</span>
+          </div>
+          <div data-phase="waiting" class="waiting" hidden>
+            <p class="eyebrow">Approve in Cybara</p>
+            <div class="code" data-pairing-code></div>
+            <p class="muted small">
+              Cybara is showing a connection request. Check that the code matches, then click
+              <strong>Approve</strong>.
+            </p>
+            <p class="muted small found" data-pairing-found></p>
+            <button type="button" class="btn-link" data-action="cancel">Cancel</button>
+          </div>
+          <div data-phase="problem" class="problem" hidden>
+            <p class="notice" data-pairing-problem></p>
+            <button type="button" class="btn btn-primary btn-block" data-action="start">
+              Try again
+            </button>
+          </div>
         </div>
-      </form>
-    </details>
+      </section>
 
-    <p id="error" class="error" hidden></p>
+      <details class="card advanced">
+        <summary>Connect manually</summary>
+        <form id="settings-form">
+          <label for="gateway-url">Cybara address</label>
+          <input id="gateway-url" type="url" placeholder="http://127.0.0.1:4269" autocomplete="off" required />
+          <label for="token">Pairing token</label>
+          <input id="token" type="password" placeholder="From Settings → Browser extension" autocomplete="off" />
+          <button type="submit" class="btn btn-block">Save and connect</button>
+        </form>
+      </details>
+    </main>
+
+    <main id="connected-view" class="stack" hidden>
+      <p id="offline-notice" class="notice" hidden></p>
+
+      <section id="tab-card" class="card">
+        <div class="tab-row">
+          <div class="tab-text">
+            <p class="eyebrow">This tab</p>
+            <p id="tab-title" class="tab-title"></p>
+            <p id="tab-url" class="tab-url"></p>
+          </div>
+          <button
+            id="share-switch"
+            type="button"
+            class="switch"
+            role="switch"
+            aria-checked="false"
+            aria-label="Share this tab with Cybara"
+          ></button>
+        </div>
+        <p id="share-hint" class="muted small"></p>
+      </section>
+
+      <section id="shared-section" class="card" hidden>
+        <p class="eyebrow">Shared with Cybara</p>
+        <ul id="shared-list" class="shared-list"></ul>
+      </section>
+
+      <section class="tip">
+        <p>
+          Ask any Cybara agent to <strong>"use my Chrome"</strong>, or share a tab above to hand
+          over a page you already have open.
+        </p>
+      </section>
+
+      <footer class="footer">
+        <span id="gateway-label" class="muted"></span>
+        <button id="disconnect-button" type="button" class="btn-link">Disconnect</button>
+      </footer>
+    </main>
+
+    <p id="error" class="notice" hidden></p>
     <script src="popup.js" type="module"></script>
   </body>
 </html>

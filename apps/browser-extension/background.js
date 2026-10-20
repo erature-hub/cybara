@@ -5,6 +5,8 @@ const PING_INTERVAL_MS = 20_000;
 const MAX_RECONNECT_DELAY_MS = 30_000;
 const GROUP_TITLE = "Cybara";
 const RECONNECT_ALARM = "cybara-reconnect";
+const DISCOVERY_PORTS = Array.from({ length: 11 }, (_, index) => 4269 + index);
+const DISCOVERY_TIMEOUT_MS = 1_500;
 
 const state = {
   socket: null,
@@ -20,6 +22,8 @@ const state = {
   pingTimer: null,
   groupId: null,
   ready: null,
+  pairing: { phase: "idle", code: "", gatewayUrl: "", error: "" },
+  pairingSocket: null,
 };
 
 function chromeProduct() {
@@ -49,13 +53,17 @@ async function persistTabs() {
   });
 }
 
-function socketUrl() {
-  const base = new URL(state.gatewayUrl);
+function socketUrlFor(gatewayUrl) {
+  const base = new URL(gatewayUrl);
   base.protocol = base.protocol === "https:" ? "wss:" : "ws:";
   base.pathname = `${base.pathname.replace(/\/+$/, "")}${SOCKET_PATH}`;
   base.search = "";
   base.hash = "";
   return base.toString();
+}
+
+function socketUrl() {
+  return socketUrlFor(state.gatewayUrl);
 }
 
 function send(message) {
@@ -82,10 +90,110 @@ async function sharedTabSummaries() {
   return summaries.filter(Boolean);
 }
 
+function broadcastState() {
+  chrome.runtime.sendMessage({ type: "state-changed" }).catch(() => undefined);
+}
+
+function setPairing(update) {
+  state.pairing = { ...state.pairing, ...update };
+  broadcastState();
+}
+
+function discoveryCandidates() {
+  const candidates = [state.gatewayUrl, ...DISCOVERY_PORTS.map((port) => `http://127.0.0.1:${port}`)];
+  return [...new Set(candidates.filter(Boolean))];
+}
+
+function openPairingSocket(gatewayUrl) {
+  return new Promise((resolve) => {
+    let socket;
+    try {
+      socket = new WebSocket(socketUrlFor(gatewayUrl), [PROTOCOL, "pair"]);
+    } catch {
+      resolve(null);
+      return;
+    }
+    const timer = setTimeout(() => {
+      socket.close();
+      resolve(null);
+    }, DISCOVERY_TIMEOUT_MS);
+    socket.onopen = () => {
+      clearTimeout(timer);
+      resolve(socket);
+    };
+    socket.onerror = () => {
+      clearTimeout(timer);
+      resolve(null);
+    };
+  });
+}
+
+function cancelPairing() {
+  const socket = state.pairingSocket;
+  state.pairingSocket = null;
+  if (socket) socket.close(1000, "Pairing cancelled");
+  setPairing({ phase: "idle", code: "", error: "" });
+}
+
+async function startPairing() {
+  await ensureReady();
+  if (state.pairingSocket) return;
+  const stored = await chrome.storage.local.get("gatewayUrl");
+  if (typeof stored.gatewayUrl === "string" && stored.gatewayUrl) state.gatewayUrl = stored.gatewayUrl;
+  setPairing({ phase: "searching", code: "", error: "", gatewayUrl: "" });
+  let socket = null;
+  let gatewayUrl = "";
+  for (const candidate of discoveryCandidates()) {
+    socket = await openPairingSocket(candidate);
+    if (socket) {
+      gatewayUrl = candidate;
+      break;
+    }
+  }
+  if (!socket) {
+    setPairing({ phase: "not-found", error: "Cybara isn't running on this computer." });
+    return;
+  }
+  state.pairingSocket = socket;
+  setPairing({ phase: "waiting", gatewayUrl });
+  socket.onmessage = async (event) => {
+    let message;
+    try {
+      message = JSON.parse(typeof event.data === "string" ? event.data : "");
+    } catch {
+      return;
+    }
+    if (message?.type === "pairing") {
+      setPairing({ phase: "waiting", code: String(message.code ?? "") });
+    } else if (message?.type === "paired" && typeof message.token === "string") {
+      state.pairingSocket = null;
+      state.token = message.token;
+      state.gatewayUrl = gatewayUrl;
+      await chrome.storage.local.set({ gatewayUrl, token: state.token });
+      setPairing({ phase: "approved", code: "" });
+      state.reconnectDelay = 1_000;
+      await connect();
+    } else if (message?.type === "pairing-denied") {
+      setPairing({ phase: "denied", code: "", error: "The request was declined in Cybara." });
+    } else if (message?.type === "pairing-expired") {
+      setPairing({ phase: "expired", code: "", error: "The request timed out. Try again." });
+    } else if (message?.type === "pairing-error") {
+      setPairing({ phase: "error", code: "", error: String(message.error ?? "Pairing failed.") });
+    }
+  };
+  socket.onclose = () => {
+    if (state.pairingSocket !== socket) return;
+    state.pairingSocket = null;
+    if (state.pairing.phase === "waiting") {
+      setPairing({ phase: "error", code: "", error: "Cybara closed the connection. Try again." });
+    }
+  };
+}
+
 function setStatus(status, error = "") {
   state.status = status;
   state.error = error;
-  chrome.runtime.sendMessage({ type: "state-changed" }).catch(() => undefined);
+  broadcastState();
 }
 
 function clearTimers() {
@@ -116,7 +224,7 @@ async function connect() {
   if (state.socket && state.socket.readyState <= WebSocket.OPEN) return;
   clearTimers();
   if (!state.token) {
-    setStatus("needs-token", "Paste the pairing token from Cybara → Settings → Browser.");
+    setStatus("needs-token");
     return;
   }
   let url;
@@ -159,10 +267,15 @@ async function connect() {
     void detachAll();
     const reason =
       event.code === 1006
-        ? "Cybara is not reachable. Is the app running?"
+        ? "Cybara isn't reachable. Open the Cybara app and it will reconnect."
         : event.reason || `Disconnected (${event.code})`;
+    if (event.code === 4001) {
+      state.token = "";
+      void chrome.storage.local.remove("token");
+      setStatus("needs-token", "Cybara reset the connection. Connect again to continue.");
+      return;
+    }
     setStatus("disconnected", reason);
-    if (event.code === 4001) return;
     scheduleReconnect();
   };
 }
@@ -351,6 +464,7 @@ chrome.runtime.onMessage.addListener((message, _sender, respond) => {
           error: state.error,
           gatewayUrl: state.gatewayUrl,
           hasToken: Boolean(state.token),
+          pairing: state.pairing,
           activeTab: active
             ? {
                 tabId: active.id,
@@ -378,8 +492,19 @@ chrome.runtime.onMessage.addListener((message, _sender, respond) => {
       case "forget-token": {
         state.token = "";
         await chrome.storage.local.remove("token");
-        disconnect("Pairing removed");
-        setStatus("needs-token", "Paste the pairing token from Cybara → Settings → Browser.");
+        disconnect("Disconnected from Cybara");
+        setStatus("needs-token");
+        setPairing({ phase: "idle", code: "", error: "" });
+        respond({ ok: true });
+        return;
+      }
+      case "start-pairing": {
+        void startPairing();
+        respond({ ok: true });
+        return;
+      }
+      case "cancel-pairing": {
+        cancelPairing();
         respond({ ok: true });
         return;
       }
@@ -411,6 +536,11 @@ chrome.alarms.onAlarm.addListener((alarm) => {
   if (alarm.name === RECONNECT_ALARM) void connect();
 });
 chrome.runtime.onStartup.addListener(() => void connect());
-chrome.runtime.onInstalled.addListener(() => void connect());
+chrome.runtime.onInstalled.addListener((details) => {
+  if (details.reason === "install") {
+    void chrome.tabs.create({ url: chrome.runtime.getURL("welcome.html") });
+  }
+  void connect();
+});
 
 void connect();

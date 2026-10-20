@@ -596,7 +596,11 @@ function createGatewayServer(
           });
         }
         const upgraded = server.upgrade(req, {
-          data: { kind: "extension" },
+          data: {
+            kind: "extension",
+            mode: authorization.mode,
+            userAgent: requestHeaders["user-agent"],
+          },
           headers: { "Sec-WebSocket-Protocol": BROWSER_EXTENSION_PROTOCOL },
         });
         if (upgraded) return undefined;

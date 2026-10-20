@@ -1,6 +1,10 @@
 import { useCallback, useEffect, useState } from "react";
 import { Copy, Eye, EyeOff, FolderOpen, Loader2, Puzzle, RefreshCw } from "lucide-react";
 import { apiFetch } from "@/lib/auth";
+import {
+  type BrowserExtensionPairingRequest,
+  resolveBrowserExtensionPairing,
+} from "@/components/browser/BrowserExtensionPairingPrompt";
 
 interface ExtensionTab {
   tabId: number;
@@ -21,6 +25,7 @@ interface BrowserExtensionResponse {
   error?: string;
   status?: BrowserExtensionStatus;
   pairing?: { token: string; socketPath: string };
+  pairingRequests?: BrowserExtensionPairingRequest[];
   extensionDirectory?: string | null;
 }
 
@@ -92,7 +97,26 @@ export function BrowserExtensionPanel(): React.JSX.Element {
     }
   }, []);
 
+  const resolvePairing = useCallback(
+    async (id: string, decision: "approve" | "deny"): Promise<void> => {
+      setBusy(true);
+      try {
+        const result = await resolveBrowserExtensionPairing(id, decision);
+        if (!result.success && decision === "approve") {
+          setError(result.error ?? "The request could not be approved");
+        }
+        await load();
+      } catch {
+        setError("The local browser service did not respond");
+      } finally {
+        setBusy(false);
+      }
+    },
+    [load]
+  );
+
   const status = data?.status;
+  const pairingRequests = data?.pairingRequests ?? [];
   const token = data?.pairing?.token ?? "";
   const directory = data?.extensionDirectory ?? null;
   const sharedTabs = status?.tabs.filter((tab) => tab.shared) ?? [];
@@ -143,10 +167,8 @@ export function BrowserExtensionPanel(): React.JSX.Element {
       ) : (
         <ol className="list-decimal space-y-1 pl-4 text-xs text-[var(--text-secondary)]">
           <li>
-            Open <code>chrome://extensions</code> and turn on Developer mode.
-          </li>
-          <li>
-            Choose Load unpacked and select the extension folder
+            Open <code>chrome://extensions</code>, turn on Developer mode, choose Load unpacked and
+            select the extension folder
             {directory ? (
               <>
                 : <code className="break-all">{directory}</code>
@@ -154,11 +176,39 @@ export function BrowserExtensionPanel(): React.JSX.Element {
             ) : null}
             .
           </li>
-          <li>
-            Click the Cybara toolbar icon, paste the pairing token below, then Save and connect.
-          </li>
+          <li>The extension opens a setup page and finds Cybara on this computer by itself.</li>
+          <li>Approve the connection request that appears in Cybara. That's it.</li>
         </ol>
       )}
+
+      {pairingRequests.map((request) => (
+        <div
+          key={request.id}
+          className="flex flex-wrap items-center gap-2 rounded-md border border-[rgba(var(--accent-primary),0.35)] bg-[rgba(var(--accent-primary),0.08)] p-2 text-xs"
+        >
+          <span className="min-w-0 flex-1">
+            <span className="font-medium">{request.browser}</span> wants to connect · code{" "}
+            <code className="font-semibold tracking-wider">{request.code}</code>
+          </span>
+          <button
+            type="button"
+            className={buttonClass}
+            disabled={busy}
+            onClick={() => void resolvePairing(request.id, "deny")}
+          >
+            Decline
+          </button>
+          <button
+            type="button"
+            className={`${buttonClass} border-transparent text-white`}
+            style={{ background: "var(--accent-gradient)" }}
+            disabled={busy}
+            onClick={() => void resolvePairing(request.id, "approve")}
+          >
+            Approve
+          </button>
+        </div>
+      ))}
 
       {directory && !status?.connected ? (
         <div className="flex flex-wrap gap-2">
@@ -181,41 +231,45 @@ export function BrowserExtensionPanel(): React.JSX.Element {
         </div>
       ) : null}
 
-      <div className="space-y-1">
-        <p className="text-xs font-medium">Pairing token</p>
-        <div className="flex items-center gap-2">
-          <code className="min-w-0 flex-1 truncate rounded border border-[var(--surface-border)] px-2 py-1 text-xs">
-            {token ? (revealToken ? token : "•".repeat(Math.min(token.length, 32))) : "…"}
-          </code>
-          <button
-            type="button"
-            className={buttonClass}
-            aria-label={revealToken ? "Hide token" : "Show token"}
-            onClick={() => setRevealToken((value) => !value)}
-          >
-            {revealToken ? <EyeOff size={13} /> : <Eye size={13} />}
-          </button>
-          <button
-            type="button"
-            className={buttonClass}
-            disabled={!token}
-            onClick={() => void copy(token, "token")}
-          >
-            <Copy size={13} />
-            {copied === "token" ? "Copied" : "Copy"}
-          </button>
-          <button
-            type="button"
-            className={buttonClass}
-            disabled={busy}
-            title="Create a new token and disconnect the current extension"
-            onClick={() => void rotate()}
-          >
-            {busy ? <Loader2 size={13} className="animate-spin" /> : <RefreshCw size={13} />}
-            New
-          </button>
+      <details className="text-xs">
+        <summary className="cursor-pointer text-[var(--text-muted)]">
+          Connect manually with a pairing token
+        </summary>
+        <div className="mt-2 space-y-1">
+          <div className="flex items-center gap-2">
+            <code className="min-w-0 flex-1 truncate rounded border border-[var(--surface-border)] px-2 py-1 text-xs">
+              {token ? (revealToken ? token : "•".repeat(Math.min(token.length, 32))) : "…"}
+            </code>
+            <button
+              type="button"
+              className={buttonClass}
+              aria-label={revealToken ? "Hide token" : "Show token"}
+              onClick={() => setRevealToken((value) => !value)}
+            >
+              {revealToken ? <EyeOff size={13} /> : <Eye size={13} />}
+            </button>
+            <button
+              type="button"
+              className={buttonClass}
+              disabled={!token}
+              onClick={() => void copy(token, "token")}
+            >
+              <Copy size={13} />
+              {copied === "token" ? "Copied" : "Copy"}
+            </button>
+            <button
+              type="button"
+              className={buttonClass}
+              disabled={busy}
+              title="Create a new token and disconnect the current extension"
+              onClick={() => void rotate()}
+            >
+              {busy ? <Loader2 size={13} className="animate-spin" /> : <RefreshCw size={13} />}
+              New
+            </button>
+          </div>
         </div>
-      </div>
+      </details>
       {error ? <p className="text-xs text-red-400">{error}</p> : null}
     </section>
   );

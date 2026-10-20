@@ -16,10 +16,16 @@ is the supported way to give an agent access to the profile you actually use.
    path with a **Show folder** button. In a source checkout it is `apps/browser-extension`.
 2. Open `chrome://extensions`, turn on **Developer mode**, choose **Load unpacked**, and select
    the folder.
-3. Click the Cybara toolbar icon, open **Connection**, paste the pairing token from Settings →
-   Browser → Browser extension, and choose **Save and connect**.
+3. The extension opens a setup page and looks for Cybara on this computer (the saved address, then
+   ports 4269 to 4279). It shows a short code such as `EL7-XBS`.
+4. Cybara shows a **Connect browser?** prompt with the same code, on any screen of the app and
+   under Settings → Safety → Browser extension. Check the code and click **Approve**. The setup page
+   switches to "You're connected" with tips for pinning the extension and sharing a tab.
 
-The status pill in Settings turns to **Connected** once the extension is paired.
+You can start pairing again any time from the toolbar popup with **Connect to Cybara**. If
+discovery cannot reach Cybara (for example a remote or non-default address), open **Connect
+manually** in the popup and paste the address plus the pairing token from Settings → Safety →
+Browser extension → **Connect manually with a pairing token**.
 
 ## Use
 
@@ -42,10 +48,11 @@ The status pill in Settings turns to **Connected** once the extension is paired.
   access or content scripts, overrides the default content security policy, or adds a
   dependency manifest or lockfile that OSV scanning would not cover.
 
-- The extension connects only to the Cybara address you configure, by default
-  `http://127.0.0.1:4269`. The gateway accepts the connection only from loopback, only from an
-  extension origin, and only with the pairing token. Rotating the token in Settings disconnects the
-  current extension.
+- The extension connects only to Cybara on this computer. The gateway accepts extension sockets
+  only from loopback and only from an extension origin. A pairing request carries no credentials:
+  it receives the token only after you approve its code in the authenticated Cybara app, at most
+  three requests can wait at once, and each expires after five minutes. Rotating the token in
+  Settings disconnects the current extension, which then asks to pair again.
 - The extension debugs only tabs you shared or tabs Cybara opened. Requests for any other tab are
   refused inside the extension, so a compromised gateway cannot attach to the rest of your browser.
 - Cybara never closes a tab you shared, and the relay refuses `Browser.close`, `Browser.crash` and
