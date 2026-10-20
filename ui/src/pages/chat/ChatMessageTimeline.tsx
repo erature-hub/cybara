@@ -375,7 +375,7 @@ const DeferredChatMessageRow = memo(function DeferredChatMessageRow(
         className={cn(
           "chat-markdown whitespace-pre-wrap break-words text-gray-200",
           message.role === "user"
-            ? "max-w-[85%] rounded-xl border border-[rgba(var(--accent-primary),0.2)] px-3 py-2 text-right sm:max-w-[75%] sm:rounded-2xl sm:px-4 sm:py-3 lg:max-w-[65%]"
+            ? "max-w-[85%] rounded-xl border border-[rgba(var(--accent-primary),0.2)] px-3 py-2 text-left sm:max-w-[75%] sm:rounded-2xl sm:px-4 sm:py-3 lg:max-w-[65%]"
             : "w-full min-w-0 py-1"
         )}
       >
@@ -437,7 +437,7 @@ const ChatMessageRow = memo(function ChatMessageRow({
       <div
         className={
           message.role === "user"
-            ? "max-w-[85%] text-right sm:max-w-[75%] lg:max-w-[65%]"
+            ? "max-w-[85%] text-left sm:max-w-[75%] lg:max-w-[65%]"
             : conversationStyle
               ? "min-w-0 max-w-[88%] sm:max-w-[78%] lg:max-w-[70%]"
               : "w-full min-w-0"
