@@ -1,5 +1,6 @@
 import puppeteer, { type Browser, type Page } from "puppeteer-core";
 import { spawn, type ChildProcess } from "node:child_process";
+import { createHash } from "node:crypto";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
@@ -13,6 +14,8 @@ import {
 
 const CDP_PORT_RANGE_START = 18800;
 const CDP_PORT_RANGE_END = 18900;
+const SAFE_PROFILE_NAME = /^[A-Za-z0-9._-]+$/;
+const MAX_PROFILE_NAME_LENGTH = 64;
 
 export interface BrowserProfile {
   name: string;
@@ -30,10 +33,71 @@ export interface BrowserProfileConfig {
   color?: string;
 }
 
-const browsers = new Map<string, { process: ChildProcess; browser: Browser }>();
+interface BrowserInstance {
+  process: ChildProcess;
+  browser: Browser;
+}
+
+const browsers = new Map<string, BrowserInstance>();
+const browserStarts = new Map<string, Promise<Browser>>();
 const pages = new Map<string, Page>();
 const profiles = new Map<string, BrowserProfile>();
 const usedPorts = new Set<number>();
+
+function isSafeProfileName(profileName: string): boolean {
+  return (
+    profileName.length > 0 &&
+    profileName.length <= MAX_PROFILE_NAME_LENGTH &&
+    profileName !== "." &&
+    profileName !== ".." &&
+    SAFE_PROFILE_NAME.test(profileName)
+  );
+}
+
+export function profileNameForSession(sessionId: string): string {
+  if (isSafeProfileName(sessionId)) return sessionId;
+  const readable = sessionId
+    .replace(/[^A-Za-z0-9._-]+/g, "-")
+    .replace(/^[.-]+|-+$/g, "")
+    .slice(0, 40);
+  const digest = createHash("sha256").update(sessionId).digest("hex").slice(0, 16);
+  return `${readable || "session"}-${digest}`;
+}
+
+function profilePageIds(profileName: string): string[] {
+  const prefix = `${profileName}-`;
+  return Array.from(pages.keys()).filter(
+    (id) => id.startsWith(prefix) && /^\d+$/.test(id.slice(prefix.length))
+  );
+}
+
+function forgetBrowser(profileName: string, instance: BrowserInstance): void {
+  if (browsers.get(profileName) !== instance) return;
+  browsers.delete(profileName);
+  for (const pageId of profilePageIds(profileName)) pages.delete(pageId);
+  const profile = profiles.get(profileName);
+  if (profile) {
+    profile.running = false;
+    profile.lastTargetId = null;
+  }
+  if (instance.process.exitCode === null && instance.process.signalCode === null) {
+    instance.process.kill();
+  }
+}
+
+function portIsFree(port: number): boolean {
+  try {
+    const listener = Bun.listen({
+      hostname: "127.0.0.1",
+      port,
+      socket: { data() {} },
+    });
+    listener.stop(true);
+    return true;
+  } catch {
+    return false;
+  }
+}
 
 function profileDownloadBehavior(): { policy: "allow"; downloadPath: string } | { policy: "deny" } {
   const supervision = getBrowserSupervisionSettings({ redact: false });
@@ -70,14 +134,7 @@ function getConfigDir(): string {
 }
 
 function assertSafeProfileName(profileName: string): void {
-  if (
-    typeof profileName !== "string" ||
-    profileName.length === 0 ||
-    profileName.length > 64 ||
-    profileName === "." ||
-    profileName === ".." ||
-    !/^[A-Za-z0-9._-]+$/.test(profileName)
-  ) {
+  if (typeof profileName !== "string" || !isSafeProfileName(profileName)) {
     throw new Error(
       `Invalid browser profile name: profile names may only contain letters, numbers, '.', '_', and '-'`
     );
@@ -97,7 +154,7 @@ export function resolveUserDataDir(profileName: string): string {
 
 function findAvailablePort(): number {
   for (let port = CDP_PORT_RANGE_START; port < CDP_PORT_RANGE_END; port++) {
-    if (!usedPorts.has(port)) {
+    if (!usedPorts.has(port) && portIsFree(port)) {
       return port;
     }
   }
@@ -192,15 +249,34 @@ async function findChromeExecutable(): Promise<string | null> {
 }
 
 export async function startBrowser(profileName: string): Promise<Browser> {
+  const running = browsers.get(profileName);
+  if (running?.browser.connected) return running.browser;
+  if (running) forgetBrowser(profileName, running);
+  const inFlight = browserStarts.get(profileName);
+  if (inFlight) return inFlight;
+  const start = launchProfileBrowser(profileName).finally(() => {
+    browserStarts.delete(profileName);
+  });
+  browserStarts.set(profileName, start);
+  return start;
+}
+
+function reassignPortIfTaken(profile: BrowserProfile): void {
+  if (portIsFree(profile.cdpPort)) return;
+  usedPorts.delete(profile.cdpPort);
+  const replacement = findAvailablePort();
+  usedPorts.add(replacement);
+  profile.cdpPort = replacement;
+  profile.cdpUrl = `http://127.0.0.1:${replacement}`;
+}
+
+async function launchProfileBrowser(profileName: string): Promise<Browser> {
   let profile = profiles.get(profileName);
   if (!profile) {
     profile = await createProfile({ name: profileName });
   }
   const activeProfile = profile;
-
-  if (browsers.has(profileName)) {
-    return browsers.get(profileName)!.browser;
-  }
+  reassignPortIfTaken(activeProfile);
 
   const executablePath = await findChromeExecutable();
   if (!executablePath) {
@@ -259,6 +335,8 @@ export async function startBrowser(profileName: string): Promise<Browser> {
     });
 
     proc.on("exit", (code, signal) => {
+      const instance = browsers.get(profileName);
+      if (instance?.process === proc) forgetBrowser(profileName, instance);
       if (!settled) {
         fail(
           new Error(
@@ -305,7 +383,9 @@ export async function startBrowser(profileName: string): Promise<Browser> {
             settled = true;
             if (pollTimer) clearTimeout(pollTimer);
             if (startupTimer) clearTimeout(startupTimer);
-            browsers.set(profileName, { process: proc, browser });
+            const instance: BrowserInstance = { process: proc, browser };
+            browsers.set(profileName, instance);
+            browser.on("disconnected", () => forgetBrowser(profileName, instance));
             activeProfile.running = true;
             console.log(`[Browser] Connected to Chrome via CDP WebSocket (Puppeteer)`);
             resolve(browser);
@@ -340,29 +420,19 @@ export async function stopBrowser(profileName: string): Promise<void> {
   const instance = browsers.get(profileName);
   if (!instance) return;
 
-  for (const [pageId, page] of pages) {
-    if (pageId.startsWith(profileName)) {
-      await page.close().catch(() => {});
-      pages.delete(pageId);
-    }
+  for (const pageId of profilePageIds(profileName)) {
+    await pages
+      .get(pageId)
+      ?.close()
+      .catch(() => {});
+    pages.delete(pageId);
   }
 
-  await instance.browser.close();
-
-  instance.process.kill();
-
-  browsers.delete(profileName);
-
-  const profile = profiles.get(profileName);
-  if (profile) {
-    profile.running = false;
-    profile.lastTargetId = null;
-  }
+  await instance.browser.close().catch(() => {});
+  forgetBrowser(profileName, instance);
 }
 
 export async function getBrowser(profileName: string): Promise<Browser> {
-  const existing = browsers.get(profileName);
-  if (existing) return existing.browser;
   return await startBrowser(profileName);
 }
 
@@ -413,7 +483,7 @@ export function getPage(profileName: string, pageId: string): Page | undefined {
 export async function getActivePage(profileName: string): Promise<Page> {
   const instance = browsers.get(profileName);
 
-  if (instance) {
+  if (instance?.browser.connected) {
     const browserPages = await instance.browser.pages();
     if (browserPages.length > 0) {
       return browserPages[browserPages.length - 1];
@@ -426,7 +496,10 @@ export async function getActivePage(profileName: string): Promise<Page> {
 export async function getProfilePages(
   profileName: string
 ): Promise<Array<{ id: string; url: string; title: string }>> {
-  const entries = Array.from(pages.entries()).filter(([id]) => id.startsWith(profileName));
+  const entries = profilePageIds(profileName).flatMap((id) => {
+    const page = pages.get(id);
+    return page ? [[id, page] as const] : [];
+  });
 
   const result: Array<{ id: string; url: string; title: string }> = [];
   for (const [id, page] of entries) {
@@ -451,11 +524,12 @@ export async function closePage(profileName: string, pageId: string): Promise<bo
 }
 
 export async function closeAllPages(profileName: string): Promise<void> {
-  for (const [id, page] of pages.entries()) {
-    if (id.startsWith(profileName)) {
-      await page.close().catch(() => {});
-      pages.delete(id);
-    }
+  for (const id of profilePageIds(profileName)) {
+    await pages
+      .get(id)
+      ?.close()
+      .catch(() => {});
+    pages.delete(id);
   }
 }
 
@@ -481,6 +555,6 @@ export function getPagesMap(): Map<string, Page> {
   return pages;
 }
 
-export function getBrowsersMap(): Map<string, { process: ChildProcess; browser: Browser }> {
+export function getBrowsersMap(): Map<string, BrowserInstance> {
   return browsers;
 }
