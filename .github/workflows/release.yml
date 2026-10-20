@@ -535,6 +535,30 @@ jobs:
           draft: true
           prerelease: ${{ contains(github.ref, 'alpha') || contains(github.ref, 'beta') || contains(github.ref, 'rc') }}
 
+  build-browser-extension:
+    name: Browser extension
+    needs: quality
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2
+        with:
+          bun-version: ${{ env.BUN_VERSION }}
+      - name: Sync version metadata
+        run: bun run version:sync
+      - name: Package browser extension
+        run: bun run package:browser-extension
+      - name: Upload browser extension artifact
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: cybara-browser-extension
+          path: release/browser-extension/*.zip
+          if-no-files-found: error
+
   # ── React Native mobile app (Expo update bundles) ──────────────────────────
   build-mobile:
     name: Mobile Expo bundles
@@ -882,7 +906,7 @@ jobs:
   # ── Create GitHub Release with CLI binaries + checksums ─────────────────────
   release:
     name: Create Release
-    needs: [build-cli, smoke-cli-darwin-x64, build-mobile]
+    needs: [build-cli, smoke-cli-darwin-x64, build-mobile, build-browser-extension]
     runs-on: ubuntu-latest
     steps:
       - name: Checkout

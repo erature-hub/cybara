@@ -28,3 +28,16 @@ jobs:
         --lockfile=site/bun.lock
         --lockfile=src-tauri/Cargo.lock
       fail-on-vuln: true
+
+  browser-extension:
+    name: Browser extension supply chain
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2
+        with:
+          bun-version: "1.4.3"
+      - name: Check extension permissions, remote code and dependencies
+        run: bun run check:browser-extension

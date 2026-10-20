@@ -16,6 +16,7 @@ const CARGO_TOML_PATH = join(ROOT, "src-tauri", "Cargo.toml");
 const TAURI_CONFIG_PATH = join(ROOT, "src-tauri", "tauri.conf.json");
 const MOBILE_APP_JSON_PATH = join(ROOT, "apps", "mobile", "app.json");
 const NIX_RELEASE_PATH = join(ROOT, "nix", "release.nix");
+const BROWSER_EXTENSION_MANIFEST_PATH = join(ROOT, "apps", "browser-extension", "manifest.json");
 
 function mobileBuildNumber(version: string): number {
   const match = version.match(/^(\d+)\.(\d+)\.(\d+)/);
@@ -138,6 +139,14 @@ function syncVersion(version: string): string[] {
     writeIfChanged(NIX_RELEASE_PATH, replaceNixReleaseVersion(readText(NIX_RELEASE_PATH), version))
   ) {
     changed.push("nix/release.nix");
+  }
+  if (
+    writeIfChanged(
+      BROWSER_EXTENSION_MANIFEST_PATH,
+      replaceJsonVersion(readText(BROWSER_EXTENSION_MANIFEST_PATH), version)
+    )
+  ) {
+    changed.push("apps/browser-extension/manifest.json");
   }
   return changed;
 }

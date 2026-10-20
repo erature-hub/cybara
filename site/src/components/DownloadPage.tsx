@@ -16,7 +16,7 @@ import { InstallTabs } from "./InstallTabs";
 import { formatDownloadTotal, useDownloadTotal, useLatestRelease } from "../hooks/useLatestRelease";
 import { PAGE_HEADS } from "../pageMeta";
 
-type SectionKey = "mac" | "windows" | "linux" | "mobile" | "packages" | "cli";
+type SectionKey = "mac" | "windows" | "linux" | "mobile" | "browser" | "packages" | "cli";
 
 interface DownloadSection {
   key: SectionKey;
@@ -30,11 +30,13 @@ const SECTION_META: Array<{ key: SectionKey; label: string; icon: IconName }> = 
   { key: "windows", label: "Windows desktop GUI", icon: "windows" },
   { key: "linux", label: "Linux desktop GUI", icon: "linux" },
   { key: "mobile", label: "Mobile apps", icon: "mobile" },
+  { key: "browser", label: "Browser extension", icon: "extension" },
   { key: "packages", label: "Package managers", icon: "package" },
   { key: "cli", label: "CLI + TUI downloads", icon: "terminal" },
 ];
 
 function sectionForClient(client: DownloadClient): SectionKey {
+  if (client.icon === "extension") return "browser";
   if (
     client.icon === "homebrew" ||
     client.icon === "docker" ||
@@ -58,6 +60,7 @@ function orderSections(sections: DownloadSection[], os: DetectedOS): DownloadSec
     windows: 5,
     linux: 5,
     mobile: 3,
+    browser: 3,
     packages: 4,
     cli: 2,
   };

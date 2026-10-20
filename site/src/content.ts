@@ -494,6 +494,20 @@ export const DOWNLOAD_GROUPS: readonly DownloadGroup[] = [
     ],
   },
   {
+    label: "Browser extension",
+    icon: "extension",
+    clients: [
+      {
+        name: "Cybara Browser Bridge",
+        platform: "Chrome · Edge · Brave",
+        format: ".zip · load unpacked",
+        icon: "extension",
+        href: RELEASES_URL,
+        assetPattern: /cybara-browser-extension-v[\d.]+\.zip$/i,
+      },
+    ],
+  },
+  {
     label: "Command line",
     icon: "terminal",
     clients: [

@@ -9,10 +9,13 @@ is the supported way to give an agent access to the profile you actually use.
 
 ## Install
 
-1. Open `chrome://extensions` and turn on **Developer mode**.
-2. Choose **Load unpacked** and select the extension folder. Settings → Browser → Browser
-   extension shows the path and a **Show folder** button. In a source checkout it is
-   `apps/browser-extension`; desktop releases ship it in the app resources as `browser-extension`.
+1. Get the extension. Each [GitHub release](https://github.com/metaspartan/cybara/releases/latest)
+   includes `cybara-browser-extension-v<version>.zip` with a `.sha256` checksum, also linked from
+   the download page on the website. Unzip it into a folder you will keep. Desktop installs also
+   ship the same folder in the app resources, and Settings → Browser → Browser extension shows its
+   path with a **Show folder** button. In a source checkout it is `apps/browser-extension`.
+2. Open `chrome://extensions`, turn on **Developer mode**, choose **Load unpacked**, and select
+   the folder.
 3. Click the Cybara toolbar icon, open **Connection**, paste the pairing token from Settings →
    Browser → Browser extension, and choose **Save and connect**.
 
@@ -32,6 +35,12 @@ The status pill in Settings turns to **Connected** once the extension is paired.
   revokes access immediately.
 
 ## Security model
+
+- The extension has no third-party dependencies and loads no remote code. CI runs
+  `bun run check:browser-extension` in the OSV workflow and in `check:ci`. It fails if the manifest
+  gains permissions beyond `alarms`, `debugger`, `storage`, `tabGroups` and `tabs`, declares host
+  access or content scripts, overrides the default content security policy, or adds a
+  dependency manifest or lockfile that OSV scanning would not cover.
 
 - The extension connects only to the Cybara address you configure, by default
   `http://127.0.0.1:4269`. The gateway accepts the connection only from loopback, only from an
