@@ -1323,6 +1323,7 @@ setAgentHandler(async (job) => {
     const message = job.payload.kind === "agentTurn" ? job.payload.message : String(job.payload);
     const result = await agentManager.message(agent.id, message, {
       workspaceDir: job.workspaceDir,
+      sessionId: `cron-${job.id}`,
     });
     console.log(`[Cron] agentTurn job ${job.id} completed: ${result.response.slice(0, 100)}...`);
     return { success: true };

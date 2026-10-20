@@ -126,9 +126,13 @@ export const agentRoutes: Record<string, RouteHandler> = {
   }),
 
   "POST /api/agents/:id/message": async (body, params) => {
-    const data = body as { message: string };
+    const data = body as { message: string; sessionId?: unknown };
     if (!data.message) throw new Error("Message content is required");
-    const result = await agentManager.message(agentId(params), data.message);
+    const sessionId =
+      typeof data.sessionId === "string" && data.sessionId.trim()
+        ? data.sessionId.trim()
+        : undefined;
+    const result = await agentManager.message(agentId(params), data.message, { sessionId });
     return result;
   },
   "POST /api/agents/:id/loops": async (body, params) => {

@@ -53,12 +53,37 @@ function mergeSteeringContext(
   };
 }
 
+const TRANSIENT_TOOL_FAILURE_PATTERNS = [
+  /\bnot enabled for this agent\b/i,
+  /\bwas denied by the operator\b/i,
+  /\brequires approval\b/i,
+  /\bno Cybara app is connected\b/i,
+  /\bis disabled by configuration\b/i,
+  /\bUser (?:took control of the computer|switched to\b)/,
+  /\bCybara cannot reach your Chrome\b/,
+  /\bbrowser extension is not connected\b/i,
+  /\bInvalid browser profile name\b/,
+];
+
+export const TRANSIENT_TOOL_FAILURE_NOTE =
+  "This failure came from an earlier turn. Tool availability, approvals and browser connections are checked again on every turn, so call the tool again if it is still needed.";
+
+export function replayedToolOutcome(toolCall: { result?: unknown; error?: unknown }): unknown {
+  if (toolCall.result !== undefined) return toolCall.result;
+  const { error } = toolCall;
+  return typeof error === "string" &&
+    TRANSIENT_TOOL_FAILURE_PATTERNS.some((pattern) => pattern.test(error))
+    ? { error, note: TRANSIENT_TOOL_FAILURE_NOTE }
+    : { error };
+}
+
 function previewToolResult(toolCall: ReplayableToolCall, sessionId?: string): string {
-  const fingerprint = JSON.stringify(toolCall.result ?? { error: toolCall.error });
+  const outcome = replayedToolOutcome(toolCall);
+  const fingerprint = JSON.stringify(outcome);
   const cached = toolResultPreviewCache.get(toolCall);
   if (cached?.fingerprint === fingerprint && cached.sessionId === sessionId) return cached.preview;
   const preview = truncateToolResultContentForContext(
-    toolCall.result ?? { error: toolCall.error },
+    outcome,
     TOOL_RESULT_PROMPT_MAX_CHARS,
     sessionId ? { sessionId, toolName: toolCall.name, toolCallId: toolCall.id } : undefined
   );
