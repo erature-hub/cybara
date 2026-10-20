@@ -43,6 +43,10 @@ function normalizeApp(value: unknown): string {
   return typeof value === "string" ? value.trim() : "";
 }
 
+export function isCybaraSurface(appName: string): boolean {
+  return /^cybara\b/i.test(appName.trim());
+}
+
 export function beginComputerUseFocus(
   sessionIdValue: string,
   agentApp: string,
@@ -128,6 +132,7 @@ export function detectUserInterference(
 
   const state = focusStates.get(sessionId);
   if (!state) return undefined;
+  if (isCybaraSurface(frontmost)) return undefined;
 
   const target = normalizeApp(targetApp);
   const observed = normalizeApp(state.frontmostApp);

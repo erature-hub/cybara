@@ -63,6 +63,18 @@ describe("computer use user interference guard", () => {
     expect(isFocusMutatingAction("capture")).toBe(true);
   });
 
+  test("does not treat switching back to Cybara as the user taking over", async () => {
+    beginComputerUseFocus(SESSION, "Finder", "Finder");
+    await settle();
+    expect(guardComputerUseAgainstUserInterference(SESSION, "Finder", "Cybara").blocked).toBe(
+      false
+    );
+    expect(guardComputerUseAgainstUserInterference(SESSION, "Finder", "Cybara Dev").blocked).toBe(
+      false
+    );
+    expect(guardComputerUseAgainstUserInterference(SESSION, "Finder", "Notes").blocked).toBe(true);
+  });
+
   test("ignores the pre-action baseline app", () => {
     beginComputerUseFocus(SESSION, "Finder", "Safari");
     const outcome = guardComputerUseAgainstUserInterference(SESSION, "Finder", "Safari");

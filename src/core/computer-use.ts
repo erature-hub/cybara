@@ -97,7 +97,7 @@ const pending = new Map<
     timer: NodeJS.Timeout;
   }
 >();
-let initBuffer = "";
+let driverStart: Promise<void> | null = null;
 const declaredDriverSessions = new Set<string>();
 
 interface ActiveComputerUseTrajectory {
@@ -148,20 +148,39 @@ function spawnDriver(command: string, args: string[], options: Parameters<typeof
 }
 
 async function ensureDriver(): Promise<void> {
+  if (driverStart) return driverStart;
   if (driverProcess && driverProcess.exitCode === null) return;
+  const start = startDriver().finally(() => {
+    if (driverStart === start) driverStart = null;
+  });
+  driverStart = start;
+  return start;
+}
 
+function rejectPendingDriverRequests(error: Error): void {
+  for (const [id, entry] of pending) {
+    clearTimeout(entry.timer);
+    pending.delete(id);
+    entry.reject(error);
+  }
+}
+
+async function startDriver(): Promise<void> {
   const { command } = await getAvailableCuaDriverResolution();
-  driverProcess = spawnDriver(command, ["mcp"], {
+  const proc = spawnDriver(command, ["mcp"], {
     stdio: ["pipe", "pipe", "pipe"],
     env: { ...process.env },
   });
+  driverProcess = proc;
+  let outputBuffer = "";
 
-  driverProcess.stdout?.on("data", (chunk: Buffer) => {
-    initBuffer += chunk.toString();
+  proc.stdout?.on("data", (chunk: Buffer) => {
+    if (driverProcess !== proc) return;
+    outputBuffer += chunk.toString();
     let newlineIndex: number;
-    while ((newlineIndex = initBuffer.indexOf("\n")) >= 0) {
-      const line = initBuffer.slice(0, newlineIndex).trim();
-      initBuffer = initBuffer.slice(newlineIndex + 1);
+    while ((newlineIndex = outputBuffer.indexOf("\n")) >= 0) {
+      const line = outputBuffer.slice(0, newlineIndex).trim();
+      outputBuffer = outputBuffer.slice(newlineIndex + 1);
       if (!line) continue;
       try {
         const msg = JSON.parse(line) as {
@@ -185,27 +204,23 @@ async function ensureDriver(): Promise<void> {
     }
   });
 
-  driverProcess.stderr?.on("data", (chunk: Buffer) => {
+  proc.stderr?.on("data", (chunk: Buffer) => {
     console.warn(`[cua-driver] ${chunk.toString().trim()}`);
   });
 
-  driverProcess.on("error", (err) => {
+  proc.on("error", (err) => {
     console.warn(`[cua-driver] failed to start: ${err instanceof Error ? err.message : err}`);
-    for (const [id, entry] of pending) {
-      clearTimeout(entry.timer);
-      pending.delete(id);
-      entry.reject(new Error(driverUnavailableMessage()));
-    }
+    if (driverProcess !== proc) return;
     driverProcess = null;
+    declaredDriverSessions.clear();
+    rejectPendingDriverRequests(new Error(driverUnavailableMessage()));
   });
 
-  driverProcess.on("exit", (code) => {
-    for (const [id, entry] of pending) {
-      clearTimeout(entry.timer);
-      pending.delete(id);
-      entry.reject(new Error(`cua-driver exited (code ${code})`));
-    }
+  proc.on("exit", (code) => {
+    if (driverProcess !== proc) return;
     driverProcess = null;
+    declaredDriverSessions.clear();
+    rejectPendingDriverRequests(new Error(`cua-driver exited (code ${code})`));
   });
 
   await initializeSession();
