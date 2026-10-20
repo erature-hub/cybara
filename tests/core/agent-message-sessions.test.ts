@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, test } from "bun:test";
-import { agentManager } from "../../src/core/agent";
+import { agentManager, getBuiltinTools } from "../../src/core/agent";
 import { providerManager } from "../../src/core/providers";
 
 type CapturedCall = {
@@ -24,7 +24,11 @@ afterEach(() => {
   for (const providerId of createdProviderIds.splice(0)) providerManager.delete(providerId);
 });
 
-function setUpAgent(tools: string[]): { agentId: string; calls: CapturedCall[] } {
+function builtinTools(names: string[]) {
+  return getBuiltinTools().filter((tool) => names.includes(tool.name));
+}
+
+function setUpAgent(toolNames: string[]): { agentId: string; calls: CapturedCall[] } {
   const provider = providerManager.create({
     provider: "openai",
     name: "Session Message Provider",
@@ -35,7 +39,7 @@ function setUpAgent(tools: string[]): { agentId: string; calls: CapturedCall[] }
     name: "Session Message Agent",
     provider_id: provider.id,
     model: "gpt-4o",
-    tools,
+    tools: builtinTools(toolNames),
     type: "main",
   });
   createdAgentIds.push(agent.id);
@@ -90,7 +94,7 @@ describe("agent manager messages", () => {
     });
     expect(calls[0]?.toolNames).not.toContain("browser");
 
-    agentManager.update(agentId, { tools: ["read", "browser"] });
+    agentManager.update(agentId, { tools: builtinTools(["read", "browser"]) });
     await agentManager.message(agentId, "after edit", {
       sessionId: "edit-check",
       useMemory: false,

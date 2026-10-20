@@ -162,6 +162,7 @@ export interface NativeMacOSSidecarLayout {
   runtimeDir: string;
   cuaDriverDir: string;
   pluginsDir: string;
+  browserExtensionDir: string;
 }
 
 export function createNativeMacOSSidecarLayout(contentsPath: string): NativeMacOSSidecarLayout {
