@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Cybara Browser Bridge</title>
+    <link rel="stylesheet" href="popup.css" />
+  </head>
+  <body>
+    <header class="header">
+      <img src="icons/icon-32.png" alt="" width="24" height="24" />
+      <div class="title">
+        <h1>Cybara Browser Bridge</h1>
+        <p id="status-line" class="status"><span id="status-dot" class="dot"></span><span id="status-text">Checking…</span></p>
+      </div>
+    </header>
+
+    <section id="share-section" class="card" hidden>
+      <p class="label">This tab</p>
+      <p id="tab-title" class="tab-title"></p>
+      <p id="tab-url" class="tab-url"></p>
+      <button id="share-button" type="button" class="primary">Share this tab with Cybara</button>
+      <p id="share-hint" class="hint">Agents can read and act in shared tabs using your signed-in session. Chrome shows a banner while a tab is being controlled.</p>
+    </section>
+
+    <section id="shared-section" class="card" hidden>
+      <p class="label">Shared with Cybara</p>
+      <ul id="shared-list" class="shared-list"></ul>
+    </section>
+
+    <details id="settings" class="card">
+      <summary>Connection</summary>
+      <form id="settings-form">
+        <label for="gateway-url">Cybara address</label>
+        <input id="gateway-url" type="url" placeholder="http://127.0.0.1:4269" autocomplete="off" required />
+        <label for="token">Pairing token</label>
+        <input id="token" type="password" placeholder="Paste from Settings → Browser" autocomplete="off" />
+        <p class="hint">Find the token in Cybara under Settings → Browser → Browser extension.</p>
+        <div class="row">
+          <button type="submit" class="primary">Save and connect</button>
+          <button id="forget-button" type="button" class="ghost">Forget token</button>
+        </div>
+      </form>
+    </details>
+
+    <p id="error" class="error" hidden></p>
+    <script src="popup.js" type="module"></script>
+  </body>
+</html>

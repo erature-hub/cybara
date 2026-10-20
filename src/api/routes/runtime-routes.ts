@@ -6,6 +6,13 @@ import {
   invalidateBrowserPreview,
 } from "../../core/browser/preview-cache";
 import { refreshBrowserPreviewStream } from "../../core/browser/preview-stream";
+import {
+  browserExtensionBridge,
+  browserExtensionToken,
+  rotateBrowserExtensionToken,
+} from "../../core/browser/extension-bridge";
+import { browserExtensionDirectory } from "../../core/browser/extension-package";
+import { BROWSER_EXTENSION_SOCKET_PATH } from "../browser-extension-socket";
 import * as pwManager from "../../core/browser/pw-manager";
 import {
   getSandboxBrowserStatus,
@@ -260,6 +267,28 @@ export const runtimeRoutes: Record<string, RouteHandler> = {
   "POST /api/browser/sandbox/stop": async () => {
     await stopSandboxBrowser();
     return { success: true, status: await getSandboxBrowserStatus() };
+  },
+  "GET /api/browser/extension": async (_body, _params, context) => {
+    const denial = localBrowserRemoteAccessError(context);
+    if (denial) return { success: false, error: denial };
+    return {
+      success: true,
+      status: browserExtensionBridge.status(),
+      pairing: { token: browserExtensionToken(), socketPath: BROWSER_EXTENSION_SOCKET_PATH },
+      extensionDirectory: browserExtensionDirectory(),
+    };
+  },
+  "POST /api/browser/extension/token/rotate": async (_body, _params, context) => {
+    const denial = localBrowserRemoteAccessError(context);
+    if (denial) return { success: false, error: denial };
+    const token = rotateBrowserExtensionToken();
+    browserExtensionBridge.disconnect("Pairing token rotated");
+    return {
+      success: true,
+      status: browserExtensionBridge.status(),
+      pairing: { token, socketPath: BROWSER_EXTENSION_SOCKET_PATH },
+      extensionDirectory: browserExtensionDirectory(),
+    };
   },
   "GET /api/browser/local-chrome": async (_body, _params, context) => {
     const denial = localBrowserRemoteAccessError(context);

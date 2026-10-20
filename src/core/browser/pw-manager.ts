@@ -264,6 +264,7 @@ let legacyBrowser: Browser | null = null;
 let legacyBrowserStartedAt: number | null = null;
 let legacyContext: BrowserContext | null = null;
 const legacyPages = new Map<string, Page>();
+const externalPageReleasers = new Map<string, () => Promise<void>>();
 const consoleLogs = new Map<string, Array<{ type: string; text: string; location?: string }>>();
 const pointerStates = new Map<string, BrowserPointerState>();
 const pointerListeners = new Map<string, Set<(pointer: BrowserPointerState) => void>>();
@@ -308,9 +309,12 @@ function resetLegacyBrowserState(): void {
   legacyContext = null;
   legacyBrowserPromise = null;
   legacyContextPromise = null;
-  legacyPages.clear();
-  consoleLogs.clear();
-  pointerStates.clear();
+  for (const id of Array.from(legacyPages.keys())) {
+    if (externalPageReleasers.has(id)) continue;
+    legacyPages.delete(id);
+    consoleLogs.delete(id);
+    pointerStates.delete(id);
+  }
   if (browserLaunchState.phase !== "failed") browserLaunchState = { phase: "idle" };
 }
 
@@ -544,15 +548,34 @@ export async function stopBrowserProfile(name: string): Promise<void> {
 
 export async function createPage(): Promise<string> {
   const ctx = await getLegacyContext();
-  const page = await ctx.newPage();
+  return registerPage(await ctx.newPage());
+}
+
+export function registerExternalPage(page: Page, release: () => Promise<void>): string {
+  const id = registerPage(page);
+  externalPageReleasers.set(id, release);
+  return id;
+}
+
+export function isExternalPage(id: string): boolean {
+  return externalPageReleasers.has(id);
+}
+
+function forgetPage(id: string): void {
+  legacyPages.delete(id);
+  externalPageReleasers.delete(id);
+  consoleLogs.delete(id);
+  pointerStates.delete(id);
+  viewportModes.delete(id);
+}
+
+function registerPage(page: Page): string {
   const id = randomUUID();
   legacyPages.set(id, page);
   consoleLogs.set(id, []);
 
   page.onClose(() => {
-    legacyPages.delete(id);
-    consoleLogs.delete(id);
-    pointerStates.delete(id);
+    if (legacyPages.get(id) === page) forgetPage(id);
   });
 
   page.onNavigation(() => preparedPreviewPages.delete(page));
@@ -600,11 +623,10 @@ export async function closePage(id: string): Promise<boolean> {
   const page = legacyPages.get(id);
   if (!page) return false;
 
-  await page.close();
-  legacyPages.delete(id);
-  consoleLogs.delete(id);
-  pointerStates.delete(id);
-  viewportModes.delete(id);
+  const release = externalPageReleasers.get(id);
+  forgetPage(id);
+  if (release) await release();
+  else await page.close();
   return true;
 }
 
@@ -1414,9 +1436,8 @@ export async function waitForLoadState(
 export async function closeAll(): Promise<void> {
   await shutdownAll();
 
-  for (const [id, page] of legacyPages) {
-    await page.close().catch(() => {});
-    legacyPages.delete(id);
+  for (const id of Array.from(legacyPages.keys())) {
+    await closePage(id).catch(() => false);
   }
 
   consoleLogs.clear();

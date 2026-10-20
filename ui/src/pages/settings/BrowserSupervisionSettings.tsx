@@ -10,6 +10,7 @@ import {
 } from "@/lib/api";
 import { useUIStore } from "@/stores/uiStore";
 import { LocalChromePanel } from "../chat/LocalChromePanel";
+import { BrowserExtensionPanel } from "./BrowserExtensionPanel";
 import { MonitorCog } from "lucide-react";
 import { useEffect, useState } from "react";
 
@@ -89,6 +90,7 @@ export function BrowserSupervisionSettings() {
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-5">
+        <BrowserExtensionPanel />
         <LocalChromePanel />
         <Switch
           label="Restart after unexpected exit"

@@ -42,6 +42,7 @@
       "bin/runtime": "runtime",
       "bin/cua-driver": "cua-driver",
       "bin/plugins": "plugins",
+      "bin/browser-extension": "browser-extension",
       "bin/docker/sandbox-browser": "docker/sandbox-browser",
       "bin/ui/dist": "ui/dist",
       "bin/secp256k1.wasm": "secp256k1.wasm"

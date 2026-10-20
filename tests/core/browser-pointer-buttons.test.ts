@@ -122,8 +122,9 @@ describe("local Chrome attachment", () => {
 
   test("attaching can never close the user's browser", () => {
     const source = readSource("src/core/browser/local-chrome.ts");
-    expect(source).toContain("browser.disconnect()");
-    expect(source).not.toMatch(/\.browser\.close\(/);
+    expect(source).not.toMatch(/\.close\(/);
+    const relay = readSource("src/core/browser/extension-cdp-relay.ts");
+    expect(relay).toContain('"Browser.close"');
     const driver = readSource("src/core/browser/automation-driver.ts");
     expect(driver).toContain("this.browser.disconnect()");
   });

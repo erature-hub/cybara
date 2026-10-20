@@ -647,25 +647,21 @@ import * as rand from "./rand.js";
 import * as validate_error from "./validate_error.js";
 
 function loadWasmBinary() {
-  // Try import.meta.url first (works in dev/unbundled mode)
   try {
     const metaPath = fileURLToPath(new URL("secp256k1.wasm", import.meta.url));
     if (existsSync(metaPath)) return readFileSync(metaPath);
   } catch {}
 
-  // Fallback: packaged desktop resource dir (Tauri bundles it there).
   const resourceDir = process.env.CYBARA_RESOURCE_DIR;
   if (resourceDir) {
     const resPath = join(resourceDir, "secp256k1.wasm");
     if (existsSync(resPath)) return readFileSync(resPath);
   }
 
-  // Fallback: look next to the executable (bun --compile sidecar)
   const exeDir = dirname(process.execPath);
   const exePath = join(exeDir, "secp256k1.wasm");
   if (existsSync(exePath)) return readFileSync(exePath);
 
-  // Fallback: look in cwd
   const cwdPath = join(process.cwd(), "secp256k1.wasm");
   if (existsSync(cwdPath)) return readFileSync(cwdPath);
 
@@ -738,6 +734,12 @@ export default instance.exports;
     removeAndCopyDirectory(bundledPluginsDir, join(dir, "plugins"));
   }
   console.log("  📦 Copied bundled plugins");
+
+  const browserExtensionDir = join(import.meta.dirname, "..", "apps", "browser-extension");
+  for (const dir of [RELEASE_DIR, TAURI_BIN_DIR, tauriDebugDir]) {
+    removeAndCopyDirectory(browserExtensionDir, join(dir, "browser-extension"));
+  }
+  console.log("  📦 Copied browser extension");
 
   if (existsSync(wasmSource)) {
     for (const dir of [RELEASE_DIR, TAURI_BIN_DIR, tauriDebugDir]) {

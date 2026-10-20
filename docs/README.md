@@ -102,6 +102,7 @@ See [Desktop Guide](./desktop.md) for platform-specific build info.
 | [Plugins](./plugins.md) | Installable plugin runtime and manifests |
 | [Lab](./lab.md) | Trajectories, golden replays, benchmarks, and training-data exports |
 | [Tools Reference](./tools.md) | Built-in tools, compatibility aliases, and execution contracts |
+| [Browser Extension](./browser-extension.md) | Let agents work in your own Chrome tabs and signed-in sessions |
 | [Skills Guide](./skills.md) | Creating and managing skills |
 | [Channels](./channels.md) | Multi-platform messaging |
 | [Providers](./providers.md) | Hosted, OAuth, local, gateway, and proxy providers |
