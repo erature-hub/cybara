@@ -766,7 +766,7 @@ function createGatewayServer(
         let malformedBody = false;
         if (req.method !== "GET" && req.method !== "HEAD") {
           const needsRaw = pathname.endsWith("/webhook") || pathname.includes("/webhooks/");
-          let text = "";
+          let text: string;
           try {
             const maxBodyBytes = pathname.startsWith("/api/plugins/")
               ? 48 * 1024 * 1024

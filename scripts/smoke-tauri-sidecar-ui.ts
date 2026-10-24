@@ -133,7 +133,7 @@ export async function smokeSidecarUi(
   const stdoutPromise = new Response(processHandle.stdout).text();
   const stderrPromise = new Response(processHandle.stderr).text();
   let failure: unknown;
-  let output = "";
+  let output: string;
 
   try {
     const exitCode = () => processHandle.exitCode;

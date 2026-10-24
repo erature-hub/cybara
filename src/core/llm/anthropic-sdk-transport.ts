@@ -55,6 +55,7 @@ export function createAnthropicSdkClient(apiKey: string, fetchImpl?: typeof fetc
   return new Anthropic({
     apiKey,
     authToken: null,
+    defaultHeaders: { "x-api-key": apiKey, Authorization: null },
     baseURL: FIRST_PARTY_ANTHROPIC_ORIGIN,
     maxRetries: 0,
     timeout: resolveNonStreamingCeilingMs(),

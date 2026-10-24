@@ -160,8 +160,11 @@ async function writePngToClipboard(png: Promise<Blob>): Promise<void> {
       error instanceof DOMException &&
       (error.name === "NotAllowedError" || error.name === "SecurityError")
     ) {
-      throw new Error(
-        "The browser blocked clipboard access. Allow clipboard access for this site and try again, or use Save image as."
+      throw Object.assign(
+        new Error(
+          "The browser blocked clipboard access. Allow clipboard access for this site and try again, or use Save image as."
+        ),
+        { cause: error }
       );
     }
     throw error;

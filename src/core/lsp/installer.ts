@@ -1,4 +1,5 @@
 import {
+  type Dirent,
   chmodSync,
   copyFileSync,
   existsSync,
@@ -24,7 +25,7 @@ function findFileByName(rootDir: string, name: string): string | null {
   const stack = [rootDir];
   while (stack.length > 0) {
     const dir = stack.pop() as string;
-    let entries: ReturnType<typeof readdirSync>;
+    let entries: Dirent<string>[];
     try {
       entries = readdirSync(dir, { withFileTypes: true });
     } catch {

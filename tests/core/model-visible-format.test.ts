@@ -1,4 +1,5 @@
 import { describe, expect, test } from "bun:test";
+import { decode } from "@toon-format/toon";
 import {
   formatStructuredDataForModel,
   formatToolResultForModel,
@@ -24,6 +25,7 @@ describe("model-visible structured data formatting", () => {
     expect(result.format).toBe("toon");
     expect(result.content).toContain("rows[3]{path,added,removed,status}:");
     expect(result.content.length).toBeLessThan(JSON.stringify(value).length);
+    expect(decode(result.content)).toEqual(value);
   });
 
   test("keeps compact JSON when TOON would not save enough tokens", () => {

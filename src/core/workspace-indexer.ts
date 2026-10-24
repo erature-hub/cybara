@@ -1,5 +1,5 @@
 import { readdir, readFile, stat } from "fs/promises";
-import { existsSync, realpathSync, statSync } from "fs";
+import { type Dirent, existsSync, realpathSync, statSync } from "fs";
 import { basename, extname, isAbsolute, join, relative, resolve } from "path";
 import { homedir } from "os";
 import { createHash } from "crypto";
@@ -809,7 +809,7 @@ class WorkspaceIndexer {
         if (!currentDir) break;
         this.directoriesScanned += 1;
 
-        let entries: Awaited<ReturnType<typeof readdir>>;
+        let entries: Dirent<string>[];
         try {
           entries = await readdir(currentDir, { withFileTypes: true });
         } catch {

@@ -189,7 +189,7 @@ export async function deriveWalletAesKey(
     {
       name: "PBKDF2",
       hash: "SHA-256",
-      salt,
+      salt: new Uint8Array(salt),
       iterations: WALLET_PBKDF2_ITERATIONS,
     },
     material,
