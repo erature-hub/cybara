@@ -13,7 +13,7 @@ import { homedir, tmpdir } from "node:os";
 import { basename, dirname, join, win32 } from "node:path";
 import { extractZipArchive } from "./archive";
 
-export const CYBARA_BUN_RUNTIME_VERSION = "1.4.3";
+export const CYBARA_BUN_RUNTIME_VERSION = "1.4.4";
 
 export type BunRuntimeTarget =
   | "bun-darwin-arm64"

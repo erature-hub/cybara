@@ -15,7 +15,7 @@
     "@react-native-async-storage/async-storage": "2.2.0",
     "@react-native-segmented-control/segmented-control": "2.5.7",
     "cybara-shared": "file:../../shared",
-    "expo": "56.0.23",
+    "expo": "56.0.24",
     "expo-blur": "56.0.4",
     "expo-camera": "56.0.8",
     "expo-clipboard": "56.0.4",
@@ -27,28 +27,29 @@
     "expo-secure-store": "56.0.4",
     "expo-system-ui": "56.0.5",
     "expo-updates": "56.0.28",
-    "lucide-react-native": "1.22.0",
+    "lucide-react-native": "1.61.0",
     "react": "19.2.3",
     "react-native": "0.85.3",
     "react-native-safe-area-context": "5.7.0",
     "react-native-svg": "15.15.4"
   },
   "devDependencies": {
-    "@types/react": "19.2.17",
+    "@types/react": "19.2.18",
     "@typescript/native": "npm:typescript@7.0.2",
     "typescript": "6.0.3"
   },
   "overrides": {
     "brace-expansion": "5.0.12",
-    "browserslist": "4.28.7",
+    "browserslist": "4.29.4",
     "compression": "1.8.2",
     "shell-quote": "1.12.0",
     "source-map-js": "1.2.2",
-    "nanoid": "3.3.18",
-    "postcss": "8.5.23",
+    "nanoid": "3.3.20",
+    "postcss": "8.5.31",
     "uuid": "11.1.1",
     "js-yaml": "4.3.2",
-    "@xmldom/xmldom": "0.8.15"
+    "@xmldom/xmldom": "0.8.15",
+    "zod": "4.6.7"
   },
   "patchedDependencies": {
     "@react-native/gradle-plugin@0.85.3": "patches/@react-native%2Fgradle-plugin@0.85.3.patch",

@@ -85,7 +85,7 @@ export function formatStructuredDataForModel(
   }
 
   try {
-    const toon = encodeToon(value, { keyFolding: "safe" });
+    const toon = encodeToon(value);
     const minSavingsRatio = options.minSavingsRatio ?? 0.92;
     if (toon.length > 0 && toon.length < json.length * minSavingsRatio) {
       return {

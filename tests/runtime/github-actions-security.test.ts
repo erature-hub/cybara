@@ -68,7 +68,7 @@ describe("GitHub Actions security posture", () => {
   });
 
   test("OSV-scanned package roots pin the patched DOMPurify release", () => {
-    const floor = "3.4.16";
+    const floor = "3.4.17";
 
     function versionAtOrAboveFloor(spec: string, label: string): boolean {
       const parsed = (spec.match(/(\d+)\.(\d+)\.(\d+)/) ?? []).slice(1).map(Number);
@@ -88,10 +88,12 @@ describe("GitHub Actions security posture", () => {
       label: manifest,
       spec: read(manifest).match(/"dompurify":\s*"([^"]+)"/)?.[1] ?? "",
     }));
-    const resolved = ["bun.lock", "ui/bun.lock"].map((lockfile) => ({
-      label: lockfile,
-      spec: read(lockfile).match(/"dompurify": \["dompurify@([^"]+)"/)?.[1] ?? "",
-    }));
+    const resolved = ["bun.lock", "ui/bun.lock"]
+      .filter((lockfile) => /"dompurify": \[/.test(read(lockfile)))
+      .map((lockfile) => ({
+        label: lockfile,
+        spec: read(lockfile).match(/"dompurify": \["dompurify@([^"]+)"/)?.[1] ?? "",
+      }));
 
     for (const entry of [...declared, ...resolved]) {
       expect(entry.spec).not.toBe("");

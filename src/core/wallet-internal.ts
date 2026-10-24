@@ -11,7 +11,7 @@ export function encodeBase64(bytes: Uint8Array | ArrayBuffer): string {
   return Buffer.from(normalized).toString("base64");
 }
 
-export function decodeBase64(input: string): Uint8Array {
+export function decodeBase64(input: string): Uint8Array<ArrayBuffer> {
   return new Uint8Array(Buffer.from(input, "base64"));
 }
 

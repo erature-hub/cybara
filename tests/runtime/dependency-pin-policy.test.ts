@@ -55,8 +55,8 @@ describe("JavaScript dependency pin policy", () => {
       const overrides = pkg.overrides as Record<string, unknown>;
       const lockfile = readFileSync(join(ROOT_DIR, directory, "bun.lock"), "utf8");
 
-      expect(overrides.nanoid).toBe("3.3.18");
-      expect(lockfile).toContain('"nanoid": ["nanoid@3.3.18"');
+      expect(overrides.nanoid).toBe("3.3.20");
+      expect(lockfile).toContain('"nanoid": ["nanoid@3.3.20"');
       expect(lockfile).not.toContain('"nanoid": ["nanoid@3.3.17"');
     }
   });
@@ -84,8 +84,8 @@ describe("JavaScript dependency pin policy", () => {
 
     const rootOverrides = readJson("package.json").overrides as Record<string, unknown>;
     const rootLockfile = readFileSync(join(ROOT_DIR, "bun.lock"), "utf8");
-    expect(rootOverrides["ip-address"]).toBe("10.7.1");
-    expect(rootLockfile).toContain('"ip-address": ["ip-address@10.7.1"');
+    expect(rootOverrides["ip-address"]).toBe("10.7.4");
+    expect(rootLockfile).toContain('"ip-address": ["ip-address@10.7.4"');
     expect(rootLockfile).not.toContain('"ip-address": ["ip-address@10.5.1"');
   });
 
@@ -95,8 +95,8 @@ describe("JavaScript dependency pin policy", () => {
       const overrides = pkg.overrides as Record<string, unknown>;
       const lockfile = readFileSync(join(ROOT_DIR, directory, "bun.lock"), "utf8");
 
-      expect(overrides.browserslist).toBe("4.28.7");
-      expect(lockfile).toContain('"browserslist": ["browserslist@4.28.7"');
+      expect(overrides.browserslist).toBe("4.29.4");
+      expect(lockfile).toContain('"browserslist": ["browserslist@4.29.4"');
       expect(lockfile).not.toMatch(/"browserslist": \["browserslist@4\.28\.[0-6]"/);
     }
   });

@@ -3,6 +3,7 @@ import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import {
+  CYBARA_BUN_RUNTIME_VERSION,
   bunRuntimeCandidates,
   bunRuntimeExecutableName,
   findBunRuntime,
@@ -11,6 +12,23 @@ import {
 } from "../../src/core/bun-runtime";
 
 describe("portable Bun runtime", () => {
+  test("pins packaged runtimes and build environments to Bun 1.4.4", async () => {
+    expect(CYBARA_BUN_RUNTIME_VERSION).toBe("1.4.4");
+    const root = new URL("../../", import.meta.url);
+    for (const path of [
+      ".github/workflows/ci.yml",
+      ".github/workflows/main-version-tag.yml",
+      ".github/workflows/osv-scanner.yml",
+      ".github/workflows/release.yml",
+    ]) {
+      expect(await Bun.file(new URL(path, root)).text()).toMatch(
+        /(?:BUN_VERSION|bun-version): "1\.4\.4"/
+      );
+    }
+    const dockerfile = await Bun.file(new URL("Dockerfile", root)).text();
+    expect(dockerfile.match(/FROM oven\/bun:1\.4\.4 AS /g)).toHaveLength(2);
+  });
+
   test("maps every supported desktop architecture", () => {
     expect(getBunRuntimeTarget("darwin", "arm64")).toBe("bun-darwin-arm64");
     expect(getBunRuntimeTarget("darwin", "x64")).toBe("bun-darwin-x64");

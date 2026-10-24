@@ -1,4 +1,4 @@
-import { existsSync, readdirSync, readFileSync, statSync } from "fs";
+import { type Dirent, existsSync, readdirSync, readFileSync, statSync } from "fs";
 import { basename, dirname, join, sep } from "path";
 import type { ChatMessage } from "../api/chat";
 import type { MigrationSourceKind } from "./source-migration";
@@ -21,7 +21,7 @@ function isFile(path: string): boolean {
 function listFilesRecursive(root: string, extension: string, depth = 4): string[] {
   if (depth < 0 || !existsSync(root)) return [];
   const found: string[] = [];
-  let entries: ReturnType<typeof readdirSync>;
+  let entries: Dirent<string>[];
   try {
     entries = readdirSync(root, { withFileTypes: true });
   } catch {
@@ -348,7 +348,7 @@ export function readSourceSessions(
 function claudeCodeSubagentFiles(root: string): string[] {
   const projects = join(root, "projects");
   if (!existsSync(projects)) return [];
-  let projectEntries: ReturnType<typeof readdirSync>;
+  let projectEntries: Dirent<string>[];
   try {
     projectEntries = readdirSync(projects, { withFileTypes: true });
   } catch {
@@ -358,7 +358,7 @@ function claudeCodeSubagentFiles(root: string): string[] {
   for (const project of projectEntries) {
     if (!project.isDirectory()) continue;
     const projectDir = join(projects, project.name);
-    let sessionEntries: ReturnType<typeof readdirSync>;
+    let sessionEntries: Dirent<string>[];
     try {
       sessionEntries = readdirSync(projectDir, { withFileTypes: true });
     } catch {
@@ -367,7 +367,7 @@ function claudeCodeSubagentFiles(root: string): string[] {
     for (const session of sessionEntries) {
       if (!session.isDirectory()) continue;
       const subagentsDir = join(projectDir, session.name, "subagents");
-      let fileEntries: ReturnType<typeof readdirSync>;
+      let fileEntries: Dirent<string>[];
       try {
         fileEntries = readdirSync(subagentsDir, { withFileTypes: true });
       } catch {
