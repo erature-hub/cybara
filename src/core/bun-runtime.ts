@@ -12,8 +12,9 @@ import {
 import { homedir, tmpdir } from "node:os";
 import { basename, dirname, join, win32 } from "node:path";
 import { extractZipArchive } from "./archive";
+import runtimeRelease from "./bun-runtime-release.json";
 
-export const CYBARA_BUN_RUNTIME_VERSION = "1.4.4";
+export const CYBARA_BUN_RUNTIME_VERSION = runtimeRelease.version;
 
 export type BunRuntimeTarget =
   | "bun-darwin-arm64"
@@ -28,32 +29,7 @@ interface BunRuntimeRelease {
   sha256: string;
 }
 
-const BUN_RUNTIME_RELEASES: Record<BunRuntimeTarget, BunRuntimeRelease> = {
-  "bun-darwin-arm64": {
-    asset: "bun-darwin-aarch64.zip",
-    sha256: "80afd4c069b46a6fa8f3ec520bebc750a7843e4a8d5b9583d29ad436c00a3403",
-  },
-  "bun-darwin-x64": {
-    asset: "bun-darwin-x64.zip",
-    sha256: "62660e6438eb872278877acca77e1152d5d031324df368d4a81b428211489d2d",
-  },
-  "bun-linux-arm64": {
-    asset: "bun-linux-aarch64.zip",
-    sha256: "efa9813da5ed72423bf847f916e8d2c47c0d776add972354026a75e10da9aa21",
-  },
-  "bun-linux-x64": {
-    asset: "bun-linux-x64.zip",
-    sha256: "3e730528d89775f03f87f05c06787c4df4099d0a37f3f252e7b829cb23816e18",
-  },
-  "bun-windows-arm64": {
-    asset: "bun-windows-aarch64.zip",
-    sha256: "5e8f142ef722cbc9f67dc068a166e46ee72be8307b38cac7186589d2face668f",
-  },
-  "bun-windows-x64": {
-    asset: "bun-windows-x64.zip",
-    sha256: "0bf84e808552beea67bf1202a287a35c6c825d837b287b3f8e9dd513dba35d3d",
-  },
-};
+const BUN_RUNTIME_RELEASES: Record<BunRuntimeTarget, BunRuntimeRelease> = runtimeRelease.targets;
 
 export function getBunRuntimeTarget(
   platform: NodeJS.Platform = process.platform,
@@ -157,7 +133,11 @@ export async function installBunRuntimeAt(
   if (!response.ok) throw new Error(`Bun runtime download failed: ${response.status}`);
   const archive = Buffer.from(await response.arrayBuffer());
   const digest = new Bun.CryptoHasher("sha256").update(archive).digest("hex");
-  if (digest !== release.sha256) throw new Error("Bun runtime checksum verification failed");
+  if (digest !== release.sha256) {
+    throw new Error(
+      `Bun runtime checksum verification failed for ${release.asset} at ${CYBARA_BUN_RUNTIME_VERSION}: expected ${release.sha256}, received ${digest}`
+    );
+  }
 
   const temporaryDir = mkdtempSync(join(tmpdir(), "cybara-bun-runtime-"));
   try {

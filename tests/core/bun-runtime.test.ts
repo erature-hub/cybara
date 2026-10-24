@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { mkdtempSync, rmSync } from "node:fs";
+import { mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import {
@@ -76,12 +76,23 @@ describe("portable Bun runtime", () => {
 
   test("rejects a runtime archive whose checksum does not match", async () => {
     const destination = mkdtempSync(join(tmpdir(), "cybara-bun-runtime-test-"));
+    const installed = join(destination, "bun.exe");
+    writeFileSync(installed, "previous runtime");
+    writeFileSync(join(destination, ".version"), "1.4.3\n");
     try {
+      const received = new Bun.CryptoHasher("sha256")
+        .update("not the signed release")
+        .digest("hex");
       await expect(
         installBunRuntimeAt(destination, "bun-windows-x64", async () => {
           return new Response("not the signed release", { status: 200 });
         })
-      ).rejects.toThrow("checksum verification failed");
+      ).rejects.toThrow(
+        `Bun runtime checksum verification failed for bun-windows-x64.zip at 1.4.4: expected cd2c0fccc78f3ede1f50ca827a15f063eda13d4d150a3d0674f4f6e323d864a5, received ${received}`
+      );
+      expect(readFileSync(installed, "utf8")).toBe("previous runtime");
+      expect(readFileSync(join(destination, ".version"), "utf8")).toBe("1.4.3\n");
+      expect(readdirSync(destination).sort()).toEqual([".version", "bun.exe"]);
     } finally {
       rmSync(destination, { recursive: true, force: true });
     }
