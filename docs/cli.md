@@ -498,7 +498,7 @@ TAVILY_API_KEY=...        # Web search
 EXA_API_KEY=...           # Web search
 BRAVE_API_KEY=...         # Web search
 SEARXNG_URL=...           # Self-hosted web search
-CYBARA_RELEASE_REPOSITORY=metaspartan/cybara  # Alternate GitHub release repo for update/install
+CYBARA_RELEASE_REPOSITORY=erature-hub/cybara  # Alternate GitHub release repo for update/install
 ```
 
 ## Examples

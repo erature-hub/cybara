@@ -19,7 +19,7 @@ This document covers the production desktop release paths for both the Tauri des
 
 ### From Releases
 
-Download the latest release from [GitHub Releases](https://github.com/metaspartan/cybara/releases):
+Download the latest release from [GitHub Releases](https://github.com/erature-hub/cybara/releases):
 
 | Platform | File |
 |----------|------|
@@ -98,7 +98,7 @@ Tauri updater manifest.
 
 ```bash
 # Clone repository
-git clone https://github.com/metaspartan/cybara.git
+git clone https://github.com/erature-hub/cybara.git
 cd cybara
 
 # Install dependencies

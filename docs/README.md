@@ -6,7 +6,7 @@ Cybara is a self-hosted agent workspace built around one Bun gateway. Persistent
 
 ```bash
 # Clone & Install
-git clone https://github.com/metaspartan/cybara.git && cd cybara
+git clone https://github.com/erature-hub/cybara.git && cd cybara
 bun install
 ```
 
@@ -171,7 +171,7 @@ API key authentication, rate limiting, SSRF protection, path sandboxing. See [Se
 
 ## Support
 
-- **Issues**: [GitHub Issues](https://github.com/metaspartan/cybara/issues)
+- **Issues**: [GitHub Issues](https://github.com/erature-hub/cybara/issues)
 - **Docs**: `/docs` in your installation
 
 ---

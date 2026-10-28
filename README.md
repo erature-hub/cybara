@@ -19,10 +19,10 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/metaspartan/cybara/actions/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/metaspartan/cybara/ci.yml?branch=main&label=CI&logo=github" alt="CI" /></a>
+  <a href="https://github.com/erature-hub/cybara/actions/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/erature-hub/cybara/ci.yml?branch=main&label=CI&logo=github" alt="CI" /></a>
   <a href="LICENSE.md"><img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="License: MIT" /></a>
-  <a href="https://github.com/metaspartan/cybara/releases"><img src="https://img.shields.io/github/v/release/metaspartan/cybara?include_prereleases&display_name=tag&sort=semver" alt="Release" /></a>
-  <a href="https://github.com/metaspartan/cybara/releases"><img src="https://img.shields.io/endpoint?url=https%3A%2F%2Fcybara.ai%2Fdownloads-badge.json" alt="Total Downloads" /></a>
+  <a href="https://github.com/erature-hub/cybara/releases"><img src="https://img.shields.io/github/v/release/erature-hub/cybara?include_prereleases&display_name=tag&sort=semver" alt="Release" /></a>
+  <a href="https://github.com/erature-hub/cybara/releases"><img src="https://img.shields.io/endpoint?url=https%3A%2F%2Fcybara.ai%2Fdownloads-badge.json" alt="Total Downloads" /></a>
   <img src="https://img.shields.io/badge/runtime-Bun-f9f1e1?logo=bun" alt="Bun" />
   <img src="https://img.shields.io/badge/language-TypeScript-blue?logo=typescript" alt="TypeScript" />
   <img src="https://img.shields.io/badge/ui-React_19-61dafb?logo=react" alt="React" />
@@ -34,11 +34,42 @@
 
 ---
 
+## About This Repository
+
+This repository is an independent fork of [metaspartan/cybara](https://github.com/metaspartan/cybara),
+the original project by [Carsen Klock](https://github.com/metaspartan). It is maintained by
+**Erature** and is **not** an official upstream release channel.
+
+**What this fork changes**
+
+- **CLI-only releases.** Releases publish prebuilt CLI binaries for Linux, macOS, and Windows
+  (x64 and arm64) with SHA256 sidecars. Desktop, mobile, browser-extension, and npm publishing
+  are not performed here; those artifacts remain upstream's.
+- **No release credentials.** The repository is configured with zero GitHub Actions secrets,
+  zero Actions variables, zero webhooks, and zero environments. The release workflow uses only
+  the built-in `GITHUB_TOKEN`.
+- **Upstream fixes carried forward.** Tool-call argument parsing repairs for elided
+  tool-call arguments are included.
+
+**What this fork preserves**
+
+- **License.** MIT — see [LICENSE.md](LICENSE.md). The original copyright notice is retained.
+- **Attribution.** [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md) is unchanged, and upstream
+  authorship is credited in `package.json` (`author`) and [CITATION.cff](CITATION.cff).
+- **Upstream project identity.** The project name, logo, and trademark remain the property of
+  the upstream author.
+
+Upstream remains the canonical source for the desktop, mobile, and browser-extension builds.
+Issues specific to the CLI in this fork belong here; everything else belongs upstream.
+
+---
+---
+
 ## Quick Install
 
 Prefer the desktop GUI? Download Cybara for macOS, Windows, or Linux from
 [cybara.ai/download](https://cybara.ai/download), or get every installer directly from
-[GitHub Releases](https://github.com/metaspartan/cybara/releases).
+[GitHub Releases](https://github.com/erature-hub/cybara/releases).
 
 Install the latest Cybara CLI on macOS or Linux:
 
@@ -112,7 +143,7 @@ Source development uses **Bun only** for dependency installation, tasks, and tes
 
 ```bash
 # Clone
-git clone https://github.com/metaspartan/cybara.git
+git clone https://github.com/erature-hub/cybara.git
 cd cybara
 
 # Install dependencies

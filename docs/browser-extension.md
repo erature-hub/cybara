@@ -9,7 +9,7 @@ is the supported way to give an agent access to the profile you actually use.
 
 ## Install
 
-1. Get the extension. Each [GitHub release](https://github.com/metaspartan/cybara/releases/latest)
+1. Get the extension. Each [GitHub release](https://github.com/erature-hub/cybara/releases/latest)
    includes `cybara-browser-extension-v<version>.zip` with a `.sha256` checksum, also linked from
    the download page on the website. Unzip it into a folder you will keep. Desktop installs also
    ship the same folder in the app resources, and Settings → Browser → Browser extension shows its
