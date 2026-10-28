@@ -1,4 +1,4 @@
-import { platform as osPlatform, arch as osArch } from "os";
+import { arch as osArch, platform as osPlatform } from "os";
 
 export type PlatformTarget =
   | "darwin_arm64"
@@ -32,6 +32,10 @@ export function isMacOS(): boolean {
 
 export function isLinux(): boolean {
   return osPlatform() === "linux";
+}
+
+export function spawnWindowOptions(): { windowsHide?: boolean } {
+  return isWindows() ? { windowsHide: true } : {};
 }
 
 export function commandExists(cmd: string): boolean {
