@@ -169,9 +169,7 @@ describe("app release surface wiring", () => {
     expect(workflow).toContain("smoke-cli-darwin-x64:");
     expect(workflow).toContain("name: cybara-darwin-x64");
     expect(workflow).toContain("bash scripts/smoke-standalone-cli.sh ./cybara-darwin-x64");
-    expect(workflow).toContain(
-      "needs: [build-cli, smoke-cli-darwin-x64]"
-    );
+    expect(workflow).toContain("needs: [build-cli, smoke-cli-darwin-x64]");
   });
 
   test("release workflow does not package the browser extension in this CLI-only fork", () => {
