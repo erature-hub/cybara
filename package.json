@@ -1,6 +1,6 @@
 {
   "name": "cybara",
-  "version": "1.0.2555",
+  "version": "1.0.2556",
   "description": "Open-source multi-agent AI platform with CLI, web, desktop, and mobile apps, broad provider and channel support, MCP host/client, media generation, and multi-agent orchestration.",
   "type": "module",
   "bin": {
@@ -184,7 +184,7 @@
   },
   "license": "MIT",
   "author": "Carsen Klock @metaspartan",
-  "homepage": "https://github.com/metaspartan/cybara",
+  "homepage": "https://github.com/erature-hub/cybara#readme",
   "keywords": [
     "ai-agent",
     "llm",
@@ -198,7 +198,7 @@
   ],
   "repository": {
     "type": "git",
-    "url": "https://github.com/metaspartan/cybara.git"
+    "url": "https://github.com/erature-hub/cybara.git"
   },
   "knip": {
     "ignore": [
@@ -208,5 +208,8 @@
   "patchedDependencies": {
     "extract-zip@2.0.1": "patches/extract-zip@2.0.1.patch",
     "braces@3.0.3": "patches/braces@3.0.3.patch"
+  },
+  "bugs": {
+    "url": "https://github.com/erature-hub/cybara/issues"
   }
 }
