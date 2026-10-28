@@ -5,7 +5,6 @@ import {
   buildGitHubReleasesPageUrl,
   buildGitHubUpdaterEndpoint,
   buildTauriReleaseConfigPatch,
-  computeReleaseVersion,
   isDraftReleaseUrl,
   isValidTauriUpdaterPublicKey,
   normalizeReleaseTag,
@@ -24,11 +23,6 @@ import {
 } from "../../src/core/versioning";
 
 describe("versioning helpers", () => {
-  test("computes commit-count versions from a base semver", () => {
-    expect(computeReleaseVersion("1.0.0", 42)).toBe("1.0.42");
-    expect(computeReleaseVersion("3.7.9", 105)).toBe("3.7.105");
-  });
-
   test("normalizes release tags and URLs", () => {
     expect(normalizeReleaseTag("v1.2.3")).toBe("1.2.3");
     expect(buildGitHubReleaseApiUrl("erature-hub/cybara", "v1.2.3")).toBe(

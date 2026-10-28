@@ -92,7 +92,7 @@ maintainer-directed hotfixes.
 - Ensure `bun run check:ci` is green before requesting review.
 - Don't commit `release/` artifacts, build output, or signing keys.
 - Don't bump the version yourself. The `main-version-tag.yml` workflow derives
-  it from the commit count and syncs it across files automatically.
+  it from the release manifest and syncs it across files automatically.
 
 ## Release process
 

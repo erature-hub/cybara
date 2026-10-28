@@ -40,19 +40,6 @@ export function normalizeReleaseTag(versionOrTag: string): string {
   return versionOrTag.trim().replace(/^v/i, "");
 }
 
-export function computeReleaseVersion(baseVersion: string, commitCount: number): string {
-  const match = baseVersion.trim().match(/^(\d+)\.(\d+)\.(\d+)(?:[-+].*)?$/);
-  if (!match) {
-    throw new Error(`Unsupported base version: ${baseVersion}`);
-  }
-  if (!Number.isFinite(commitCount) || commitCount < 0) {
-    throw new Error(`Invalid commit count: ${commitCount}`);
-  }
-
-  const [, major, minor] = match;
-  return `${major}.${minor}.${Math.floor(commitCount)}`;
-}
-
 export function replaceJsonVersion(jsonText: string, version: string): string {
   const parsed = JSON.parse(jsonText) as Record<string, unknown>;
   parsed.version = version;

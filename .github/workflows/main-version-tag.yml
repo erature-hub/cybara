@@ -1,7 +1,8 @@
 name: Main Version And Tag
 
-# Computes the release version from the commit count, syncs every version
-# manifest, and pushes the release tag.
+# Reads the release version from the manifest, syncs every version manifest,
+# and pushes the release tag. The manifest is the single source of truth, so the
+# tag, the manifests, and the published binary always report the same version.
 #
 # The Release workflow is tag-driven (on: push: tags: ["v*"]), so pushing the
 # tag here is what starts a release. A tag pushed with GITHUB_TOKEN does not
@@ -46,13 +47,9 @@ jobs:
 
       - name: Resolve release version
         id: version
-        env:
-          CYBARA_RELEASE_COMMIT_OFFSET: "1"
         run: echo "value=$(bun run version:print)" >> "$GITHUB_OUTPUT"
 
       - name: Sync version files
-        env:
-          CYBARA_RELEASE_COMMIT_OFFSET: "1"
         run: bun run version:sync
 
       - name: Commit synced version

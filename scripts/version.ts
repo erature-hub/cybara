@@ -2,11 +2,7 @@
 
 import { readFileSync, writeFileSync } from "fs";
 import { join } from "path";
-import {
-  computeReleaseVersion,
-  replaceCargoTomlVersion,
-  replaceJsonVersion,
-} from "../src/core/versioning";
+import { replaceCargoTomlVersion, replaceJsonVersion } from "../src/core/versioning";
 import { replaceNixReleaseVersion } from "../src/core/nix-release";
 
 const ROOT = join(import.meta.dirname, "..");
@@ -64,34 +60,16 @@ function writeIfChanged(path: string, next: string): boolean {
   return true;
 }
 
-function readCommitCount(): number {
-  const result = Bun.spawnSync(["git", "rev-list", "--count", "HEAD"], {
-    cwd: ROOT,
-    stdout: "pipe",
-    stderr: "pipe",
-  });
-  if (result.exitCode !== 0) {
-    const message = result.stderr.toString().trim() || "git rev-list failed";
-    throw new Error(message);
-  }
-  const parsed = Number(result.stdout.toString().trim());
-  if (!Number.isFinite(parsed)) {
-    throw new Error("Could not parse git commit count");
-  }
-  return parsed;
-}
-
-function readCommitOffset(): number {
-  const raw = process.env.CYBARA_RELEASE_COMMIT_OFFSET?.trim();
-  if (!raw) return 0;
-  const parsed = Number(raw);
-  if (!Number.isFinite(parsed)) {
-    throw new Error(`Invalid CYBARA_RELEASE_COMMIT_OFFSET: ${raw}`);
-  }
-  return Math.trunc(parsed);
-}
-
 function resolveVersion(): string {
+  // The manifest is authoritative. The release version is the version recorded in
+  // package.json, optionally overridden by CYBARA_RELEASE_VERSION (the release
+  // workflow sets it to the tag it was triggered by).
+  //
+  // Deriving the version from the commit count made the tag, the manifests, and
+  // the built binary drift apart whenever a commit landed between the version
+  // sync and the tag push. Manifest-driven versioning removes that class of
+  // mismatch: one version, recorded once, used by the tag, the manifests, and
+  // the binary.
   const explicitVersion = process.env.CYBARA_RELEASE_VERSION?.trim();
   if (explicitVersion) {
     const cleaned = explicitVersion.replace(/^v/i, "");
@@ -100,10 +78,11 @@ function resolveVersion(): string {
     }
   }
   const packageJson = JSON.parse(readText(PACKAGE_JSON_PATH)) as { version?: string };
-  return computeReleaseVersion(
-    packageJson.version || "1.0.0",
-    readCommitCount() + readCommitOffset()
-  );
+  const manifestVersion = packageJson.version?.trim() || "";
+  if (!/^\d+\.\d+\.\d+/.test(manifestVersion)) {
+    throw new Error(`Unsupported package.json version: ${manifestVersion || "(empty)"}`);
+  }
+  return manifestVersion;
 }
 
 function syncVersion(version: string): string[] {
