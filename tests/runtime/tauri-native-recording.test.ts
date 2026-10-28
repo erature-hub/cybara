@@ -44,6 +44,8 @@ describe("Tauri native microphone recording", () => {
     expect(main).not.toContain('const CYBARA_SERVER_URL: &str = "http://127.0.0.1:4269"');
     expect(info).toContain("NSMicrophoneUsageDescription");
     expect(entitlements).toContain("com.apple.security.device.audio-input");
-    expect(releaseWorkflow).toContain("libasound2-dev");
+    // This fork ships CLI binaries only; there is no Tauri desktop build to
+    // install native audio dependencies for.
+    expect(releaseWorkflow).not.toContain("libasound2-dev");
   });
 });

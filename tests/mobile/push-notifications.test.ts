@@ -326,10 +326,9 @@ describe("mobile push notification helpers", () => {
     expect(appJson.expo.android.permissions).toContain("android.permission.POST_NOTIFICATIONS");
     expect(appConfig).toContain('"EXPO_PROJECT_ID"');
     expect(appConfig).toContain('"FIREBASE_GOOGLE_SERVICES_FILE"');
-    expect(releaseWorkflow).toContain("FIREBASE_GOOGLE_SERVICES_JSON_BASE64");
-    expect(releaseWorkflow).toContain(
-      "The iOS provisioning profile must include the aps-environment entitlement"
-    );
+    // This fork publishes CLI binaries only, so the release workflow never needs
+    // mobile notification credentials.
+    expect(releaseWorkflow).not.toContain("FIREBASE_GOOGLE_SERVICES_JSON_BASE64");
     expect(releaseWorkflow).not.toContain("Delete :aps-environment");
   });
 });

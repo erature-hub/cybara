@@ -14,10 +14,10 @@ describe("sidecar release smoke", () => {
     expect(sidecarStartTimeoutMs({ CYBARA_SIDECAR_SMOKE_TIMEOUT_MS: "-5" })).toBe(120_000);
   });
 
-  test("release Android builds install only the SDK packages that still exist", async () => {
+  test("release workflow ships CLI binaries only, so no Android SDK setup is required", async () => {
     const workflow = await Bun.file(".github/workflows/release.yml").text();
-    const setup = workflow.slice(workflow.indexOf("name: Setup Android SDK"));
-    expect(setup.slice(0, 260)).toContain("packages: platform-tools");
+    expect(workflow).not.toContain("name: Setup Android SDK");
+    expect(workflow).not.toContain("packages: platform-tools");
   });
 
   test("authenticates production sidecar requests with the isolated smoke key", () => {

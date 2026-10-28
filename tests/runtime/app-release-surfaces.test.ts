@@ -85,145 +85,57 @@ describe("app release surface wiring", () => {
     }
   });
 
-  test("release workflow keeps mobile Expo bundles gated by dependency and type checks", () => {
+  test("release workflow does not build mobile bundles in this CLI-only fork", () => {
     const workflow = read(".github/workflows/release.yml");
 
-    expect(workflow).toContain("build-mobile:");
-    expect(workflow).toContain("name: Mobile Expo bundles");
-    expect(workflow).toContain("uses: actions/setup-node@");
-    expect(workflow).toContain("bun run mobile:expo-check");
-    expect(workflow).toContain("bun run mobile:typecheck");
-    expect(workflow).toContain("bunx expo export --platform ios");
-    expect(workflow).toContain("bunx expo export --platform android");
-    expect(workflow).toContain("cybara-mobile-expo");
+    expect(workflow).not.toContain("build-mobile:");
+    expect(workflow).not.toContain("cybara-mobile-expo");
+    expect(workflow).not.toContain("mobile:expo-check");
+    expect(workflow).not.toContain("FIREBASE_GOOGLE_SERVICES_JSON_BASE64");
   });
 
-  test("release workflow keeps native iOS and Android builds best-effort but complete", () => {
+  test("release workflow does not build native iOS or Android artifacts in this CLI-only fork", () => {
     const workflow = read(".github/workflows/release.yml");
 
-    expect(workflow).toContain("build-android:");
-    expect(workflow).toContain("name: Android APK");
-    expect(workflow).toContain("android-actions/setup-android@");
-    expect(workflow).toContain(
-      "cd apps/mobile && bunx expo prebuild --platform android --no-install"
-    );
-    expect(workflow).toContain("Verify Android LAN pairing transport");
-    expect(workflow).toContain('android:usesCleartextTraffic="true"');
-    expect(workflow).toContain("android.permission.NEARBY_WIFI_DEVICES");
-    expect(workflow).toContain("name: Tune Android Gradle memory");
-    expect(workflow).toContain("MaxMetaspaceSize=1536m");
-    expect(workflow).toContain("kotlin.daemon.jvmargs");
-    expect(workflow).toContain("org.gradle.workers.max");
-    expect(workflow.indexOf("name: Prebuild Android project")).toBeLessThan(
-      workflow.indexOf("name: Tune Android Gradle memory")
-    );
-    expect(workflow.indexOf("name: Tune Android Gradle memory")).toBeLessThan(
-      workflow.indexOf("name: Build Android artifacts")
-    );
-    expect(workflow).toContain("./gradlew bundleRelease assembleRelease");
-    expect(workflow).toContain("./gradlew assembleDebug");
-    expect(workflow).toContain("packageName: com.ck.cybara");
-    expect(workflow).toContain(
-      "GOOGLE_PLAY_PUBLISH_CONFIGURED: ${{ secrets.GOOGLE_PLAY_SERVICE_ACCOUNT_JSON != '' }}"
-    );
-    expect(workflow).toContain(
-      "if: steps.build.outputs.aab != '' && env.GOOGLE_PLAY_PUBLISH_CONFIGURED == 'true'"
-    );
-    expect(workflow).toContain("tracks: internal");
-    expect(workflow).not.toContain("track: internal");
-
-    expect(workflow).toContain("build-ios:");
-    expect(workflow).toContain("name: iOS build");
-    expect(workflow).toContain("runs-on: macos-26");
-    expect(workflow).toContain("cd apps/mobile && bunx expo prebuild --platform ios --no-install");
-    expect(workflow).toContain("cd apps/mobile/ios && pod install --repo-update");
-    expect(workflow).toContain("xcodebuild -list -json");
-    expect(workflow).toContain("xcodebuild -workspace");
-    expect(workflow).toContain("name: Reclaim iOS build space");
-    expect(workflow).toContain("archive_ios()");
-    expect(workflow).toContain("Input/output error|No space left on device");
-    expect(workflow).toContain("<key>method</key><string>app-store-connect</string>");
-    expect(workflow).toContain("bun run scripts/upload-ios-testflight.ts");
-    expect(workflow).toContain('TESTFLIGHT_UPLOAD_ATTEMPTS: "4"');
+    expect(workflow).not.toContain("build-android:");
+    expect(workflow).not.toContain("build-ios:");
+    expect(workflow).not.toContain("android-actions/setup-android@");
+    expect(workflow).not.toContain("expo prebuild --platform");
+    expect(workflow).not.toContain("upload-ios-testflight.ts");
+    expect(workflow).not.toContain("GOOGLE_PLAY_SERVICE_ACCOUNT_JSON");
   });
 
-  test("release workflow publishes only after the Tauri updater manifest is complete", () => {
+  test("release workflow publishes CLI assets only after every target is built", () => {
     const workflow = read(".github/workflows/release.yml");
 
-    expect(workflow).toContain("releaseDraft: true");
     expect(workflow).toContain("draft: true");
     expect(workflow).toContain("publish-release:");
-    expect(workflow).toContain(
-      "needs: [release, build-tauri, build-native-macos, build-android, build-ios]"
-    );
-    expect(workflow).toContain("includeUpdaterJson: false");
-    expect(workflow).toContain("bun run scripts/publish-tauri-updater-manifest.ts");
-    expect(workflow).toContain('gh release download "$TAG"');
-    expect(workflow).toContain("darwin-aarch64,darwin-aarch64-app,darwin-x86_64");
-    expect(workflow).toContain(
-      "bun run scripts/verify-tauri-updater-manifest.ts release-check/latest.json"
-    );
+    expect(workflow).toContain("needs: [build-cli, smoke-cli-darwin-x64]");
     expect(workflow).toContain('gh release edit "$TAG" --repo "$GITHUB_REPOSITORY" --draft=false');
     expect(workflow).not.toContain("releaseDraft: false");
+    expect(workflow).not.toContain("publish-tauri-updater-manifest.ts");
+    expect(workflow).not.toContain("includeUpdaterJson: false");
   });
 
-  test("release workflow synchronizes Nix hashes before publishing without a delayed package job", () => {
+  test("release workflow synchronizes Nix hashes before publishing the release", () => {
     const releaseWorkflow = read(".github/workflows/release.yml");
-    const packageWorkflow = read(".github/workflows/publish-packages.yml");
 
     expect(releaseWorkflow).toContain("name: Sync Nix release hashes");
     expect(releaseWorkflow).toContain('bun run scripts/sync-nix-release.ts "$VERSION"');
     expect(releaseWorkflow.indexOf("name: Sync Nix release hashes")).toBeLessThan(
       releaseWorkflow.indexOf("name: Publish draft release")
     );
-    expect(packageWorkflow).not.toContain("Regenerate nix/release.nix");
-    expect(packageWorkflow).not.toContain("git add nix/release.nix");
+    expect(releaseWorkflow).not.toContain("publish-packages.yml");
   });
 
-  test("Tauri release matrix builds each platform sidecar with an explicit Bun target", () => {
+  test("release workflow does not build Tauri desktop apps in this CLI-only fork", () => {
     const workflow = read(".github/workflows/release.yml");
-    const tauriConfig = read("src-tauri/tauri.conf.json");
-    const sidecarBuilder = read("scripts/build-sidecar.ts");
 
-    expect(workflow).toContain("Build Sidecar binary");
-    expect(workflow).toContain("CYBARA_SIDECAR_BUN_TARGET: ${{ matrix.bun_target }}");
-    expect(workflow).toContain("run: bun run scripts/build-sidecar.ts");
-    expect(workflow).toContain("name: Install Windows browser preview runtime");
-    expect(workflow).toContain('PLAYWRIGHT_BROWSERS_PATH: "0"');
-    expect(workflow).toContain("bunx playwright install --only-shell chromium");
-    expect(workflow).toContain("Sign Tauri sidecar runtime resources (macOS)");
-    expect(workflow).toContain("run: bun run scripts/codesign-tauri-sidecar-runtime.ts");
-    expect(workflow).toContain("id: build_tauri_notarized_macos");
-    expect(workflow).toContain("steps.build_tauri_notarized_macos.outcome == 'failure'");
-    expect(workflow).toContain(
-      'rm -rf "src-tauri/target/${{ matrix.rust_target }}/release/bundle/dmg"'
-    );
-    expect(workflow).toContain("name: Retry Tauri App (signed and notarized macOS)");
-    expect(workflow).toContain("bun_target: bun-darwin-arm64");
-    expect(workflow).toContain('sidecar: "src-tauri/bin/cybara-aarch64-apple-darwin"');
-    expect(workflow).toContain("bun_target: bun-darwin-x64");
-    expect(workflow).toContain('sidecar: "src-tauri/bin/cybara-x86_64-apple-darwin"');
-    expect(workflow).toContain("bun_target: bun-windows-x64");
-    expect(workflow).toContain('sidecar: "src-tauri/bin/cybara-x86_64-pc-windows-msvc.exe"');
-    expect(workflow).toContain("bun_target: bun-linux-x64");
-    expect(workflow).toContain("runner: ubuntu-22.04");
-    expect(workflow).toContain('sidecar: "src-tauri/bin/cybara-x86_64-unknown-linux-gnu"');
-    expect(workflow).toContain('FUSE_PACKAGE="libfuse2"');
-    expect(workflow).toContain("desktop-file-utils");
-    expect(workflow).toContain("zsync");
-    expect(workflow).toContain('args: "--bundles deb,rpm"');
-    expect(workflow).toContain("name: Build Linux AppImage (best-effort)");
-    expect(workflow).toContain(
-      "args: --verbose --bundles appimage --config src-tauri/tauri.release.conf.json"
-    );
-    expect(workflow.indexOf('args: "--bundles deb,rpm"')).toBeLessThan(
-      workflow.indexOf("name: Build Linux AppImage (best-effort)")
-    );
-    expect(tauriConfig).toContain('"bin/node_modules": "node_modules"');
-    expect(tauriConfig).toContain('"bin/runtime": "runtime"');
-    expect(sidecarBuilder).toContain("installBunRuntimeAt(packagedRuntimeDir, target.bunTarget)");
-    expect(sidecarBuilder).toContain("PLAYWRIGHT_RUNTIME_PACKAGES");
-    expect(sidecarBuilder).toContain("for (const pkg of PLAYWRIGHT_RUNTIME_PACKAGES)");
+    expect(workflow).not.toContain("build-tauri:");
+    expect(workflow).not.toContain("tauri-action@");
+    expect(workflow).not.toContain("TAURI_SIGNING_PRIVATE_KEY");
+    expect(workflow).not.toContain("Build Sidecar binary");
+    expect(workflow).not.toContain("build-native-macos:");
   });
 
   test("CLI release binaries embed the UI for every supported OS and architecture", () => {
@@ -258,46 +170,23 @@ describe("app release surface wiring", () => {
     expect(workflow).toContain("name: cybara-darwin-x64");
     expect(workflow).toContain("bash scripts/smoke-standalone-cli.sh ./cybara-darwin-x64");
     expect(workflow).toContain(
-      "needs: [build-cli, smoke-cli-darwin-x64, build-mobile, build-browser-extension]"
+      "needs: [build-cli, smoke-cli-darwin-x64]"
     );
   });
 
-  test("releases package the browser extension through the shared checksum flow", () => {
+  test("release workflow does not package the browser extension in this CLI-only fork", () => {
     const workflow = read(".github/workflows/release.yml");
 
-    expect(workflow).toContain("build-browser-extension:");
-    expect(workflow).toContain("run: bun run package:browser-extension");
-    expect(workflow).toContain("name: cybara-browser-extension");
-    expect(workflow).toContain("path: release/browser-extension/*.zip");
+    expect(workflow).not.toContain("build-browser-extension:");
+    expect(workflow).not.toContain("package:browser-extension");
+    expect(workflow).not.toContain("cybara-browser-extension");
   });
 
-  test("dev CI cross-compiles and smoke-tests the Darwin x64 CLI artifact", () => {
-    const workflow = read(".github/workflows/ci.yml");
-    const recoveryCondition =
-      "github.ref == 'refs/heads/dev' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')";
-
-    expect(workflow).toContain("darwin-x64-cli-build:");
-    expect(workflow.split(recoveryCondition)).toHaveLength(3);
-    expect(workflow).toContain("cd ui && bash ../scripts/ci-install.sh && bun run build");
-    expect(workflow).toContain(
-      "bun run scripts/build-standalone-cli.ts bun-darwin-x64 cybara-darwin-x64"
-    );
-    expect(workflow).toContain("name: ci-cybara-darwin-x64");
-    expect(workflow).toContain("darwin-x64-cli-smoke:");
-    expect(workflow).toContain("arch -x86_64 /usr/bin/true");
-    expect(workflow).toContain("bash scripts/smoke-standalone-cli.sh ./cybara-darwin-x64");
-  });
-
-  test("release workflow runs native macOS unit tests when XCTest is available", () => {
+  test("release workflow does not package the native macOS app in this CLI-only fork", () => {
     const workflow = read(".github/workflows/release.yml");
 
-    expect(workflow).toContain("build-native-macos:");
-    expect(workflow).toContain("name: Native macOS");
-    expect(workflow).toContain("runs-on: ${{ matrix.runner }}");
-    expect(workflow).toContain("runner: macos-26");
-    expect(workflow).toContain("xcrun --find xctest");
-    expect(workflow).toContain("swift test --package-path apps/macos/Cybara");
-    expect(workflow).toContain("bun run scripts/package-native-macos.ts");
+    expect(workflow).not.toContain("package-native-macos.ts");
+    expect(workflow).not.toContain("release/native-macos/");
   });
 
   test("mobile app identity is shared across iOS, Android, and Expo metadata", () => {

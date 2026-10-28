@@ -90,44 +90,31 @@ describe("desktop updater wiring", () => {
     expect(trayRs).toContain("macos_template_icon");
   });
 
-  test("release workflow prepares updater config and passes the release tag", () => {
+  test("release workflow ships no Tauri updater artifacts in this CLI-only fork", () => {
     const workflowPath = join(ROOT_DIR, ".github", "workflows", "release.yml");
     const workflow = readFileSync(workflowPath, "utf8");
 
-    expect(workflow).toContain("bun run tauri:prepare-release");
-    expect(workflow).toContain("includeUpdaterJson: false");
-    expect(workflow).toContain("bun run scripts/publish-tauri-updater-manifest.ts");
-    expect(workflow).toContain(
+    expect(workflow).not.toContain("bun run tauri:prepare-release");
+    expect(workflow).not.toContain("includeUpdaterJson: false");
+    expect(workflow).not.toContain("bun run scripts/publish-tauri-updater-manifest.ts");
+    expect(workflow).not.toContain(
       "bun run scripts/verify-tauri-updater-manifest.ts release-check/latest.json"
     );
-    expect(workflow).toContain("TAURI_SIGNING_PRIVATE_KEY");
-    expect(workflow).toContain("TAURI_SIGNING_PRIVATE_KEY_PASSWORD");
-    expect(workflow).toContain("tagName: ${{ github.ref_name }}");
-    expect(workflow).toContain("--config src-tauri/tauri.release.conf.json");
-    expect(workflow).toContain("releaseDraft: true");
-    expect(workflow).toContain("CYBARA_TAURI_UPDATER_PUBKEY");
-    expect(workflow).toContain("publish-release:");
-    expect(workflow).not.toContain("universal-apple-darwin");
+    expect(workflow).not.toContain("TAURI_SIGNING_PRIVATE_KEY");
+    expect(workflow).not.toContain("TAURI_SIGNING_PRIVATE_KEY_PASSWORD");
+    expect(workflow).not.toContain("CYBARA_TAURI_UPDATER_PUBKEY");
+    expect(workflow).not.toContain("src-tauri/tauri.release.conf.json");
   });
 
-  test("release workflow builds platform Tauri apps as best-effort release artifacts", () => {
+  test("release workflow does not build Tauri desktop apps in this CLI-only fork", () => {
     const workflowPath = join(ROOT_DIR, ".github", "workflows", "release.yml");
     const workflow = readFileSync(workflowPath, "utf8");
 
-    expect(workflow).toContain("build-tauri:");
-    expect(workflow).toContain("continue-on-error: true");
-    expect(workflow).toContain("aarch64-apple-darwin");
-    expect(workflow).toContain("x86_64-pc-windows-msvc");
-    expect(workflow).toContain("x86_64-unknown-linux-gnu");
-    expect(workflow).toContain("tauri-apps/tauri-action@");
-    expect(workflow).toContain("HAS_MACOS_SIGNING");
-    expect(workflow).toContain("Build Tauri App (unsigned/no Apple signing)");
-    expect(workflow).toContain("matrix.platform != 'macos' || env.HAS_MACOS_SIGNING != 'true'");
-    expect(workflow).toContain("Build Tauri App (signed and notarized macOS)");
-    expect(workflow).toContain("id: build_tauri_notarized_macos");
-    expect(workflow).toContain("steps.build_tauri_notarized_macos.outcome == 'failure'");
-    expect(workflow).toContain("name: Reset macOS disk image state");
-    expect(workflow).toContain("pkill -9 diskimages-helper || true");
-    expect(workflow).toContain("name: Retry Tauri App (signed and notarized macOS)");
+    expect(workflow).not.toContain("build-tauri:");
+    expect(workflow).not.toContain("tauri-apps/tauri-action@");
+    expect(workflow).not.toContain("aarch64-apple-darwin");
+    expect(workflow).not.toContain("x86_64-pc-windows-msvc");
+    expect(workflow).not.toContain("x86_64-unknown-linux-gnu");
+    expect(workflow).not.toContain("universal-apple-darwin");
   });
 });
