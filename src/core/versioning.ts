@@ -1,7 +1,7 @@
 import { homedir } from "os";
 import { posix, win32 } from "path";
 
-export const DEFAULT_RELEASE_REPOSITORY = "metaspartan/cybara";
+export const DEFAULT_RELEASE_REPOSITORY = "erature-hub/cybara";
 export const TAURI_DEVELOPMENT_UPDATER_PUBLIC_KEY =
   "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IEVENUZGRjNGRDU1M0E5RkIKUldUN3FWUFZQLzlmN1ZoeGFqREd1a0k0MzRYVXdSR1I4WDQySlZkbzlhSHpxb1RTQ2UxVjR5WFAK";
 
