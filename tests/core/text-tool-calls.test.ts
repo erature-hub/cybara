@@ -156,7 +156,7 @@ describe("text-form tool call parsing", () => {
       '  "name": "browser",',
       '  "arguments": {',
       '    "action": "open",',
-      '    "url": "https://github.com/metaspartan/cybara"',
+      '    "url": "https://github.com/erature-hub/cybara"',
       "  }",
       "}",
     ].join("\n");
@@ -164,7 +164,7 @@ describe("text-form tool call parsing", () => {
     expect(extractTextToolCalls(raw, new Set(["browser"]))).toEqual([
       {
         name: "browser",
-        args: { action: "open", url: "https://github.com/metaspartan/cybara" },
+        args: { action: "open", url: "https://github.com/erature-hub/cybara" },
       },
     ]);
     expect(stripTextToolCallMarkup(raw)).toBe("I'll open the repository.");

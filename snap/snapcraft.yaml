@@ -37,6 +37,6 @@ parts:
         *) echo "Unsupported arch: $CRAFT_ARCH_BUILD_FOR" >&2; exit 1 ;;
       esac
       mkdir -p "$CRAFT_PART_INSTALL/bin"
-      curl -fL "https://github.com/metaspartan/cybara/releases/download/v__VERSION__/cybara-v__VERSION__-${asset}-cli" \
+      curl -fL "https://github.com/erature-hub/cybara/releases/download/v__VERSION__/cybara-v__VERSION__-${asset}-cli" \
         -o "$CRAFT_PART_INSTALL/bin/cybara"
       chmod +x "$CRAFT_PART_INSTALL/bin/cybara"

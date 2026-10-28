@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 
-const REPO_API = "https://api.github.com/repos/metaspartan/cybara";
+const REPO_API = "https://api.github.com/repos/erature-hub/cybara";
 const STAR_COUNT_CACHE_KEY = "cybara.site.starCount";
 const STAR_COUNT_CACHE_TTL_MS = 30 * 60 * 1000;
 

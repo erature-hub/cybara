@@ -1,9 +1,29 @@
 name: Release
 
+# CLI-only, secret-free release channel for erature-hub/cybara.
+#
+# Scope: build, checksum, publish, and verify the standalone CLI binaries.
+# The only credential in play is the automatic `GITHUB_TOKEN` that every
+# workflow gets; no repository secret, Actions variable, environment, or
+# registry credential is read. The workflow therefore runs in a fresh clone
+# with no setup, and it publishes assets that anonymous clients can download.
+#
+# Deliberately out of scope: the Tauri desktop app, the native macOS app, the
+# Android APK, the iOS build, and the npm publish. Those require upstream-owned
+# signing material (Apple, Android, Firebase, Expo) or registry tokens that this
+# repository does not hold and must not.
+#
+# Upstream attribution: Cybara is by Carsen Klock, MIT licensed. See NOTICE.md.
+
 on:
   push:
     tags: ["v*"]
   workflow_dispatch:
+    inputs:
+      version:
+        description: "Release version to publish (no leading v)."
+        required: false
+        type: string
 
 permissions:
   contents: write
@@ -19,7 +39,7 @@ env:
   CYBARA_RELEASE_VERSION: ${{ github.ref_name }}
 
 jobs:
-  # ── Quality gate ────────────────────────────────────────────────────────────
+  # -- Quality gate ------------------------------------------------------------
   quality:
     name: CI Quality Gate
     runs-on: ubuntu-latest
@@ -49,7 +69,7 @@ jobs:
       - name: Security audit
         run: bun run audit:ci
 
-  # ── CLI binaries (cross-compiled on a Linux runner) ─────────────────────────
+  # -- CLI binaries (cross-compiled on a Linux runner) --------------------------
   build-cli:
     name: CLI ${{ matrix.target }}
     needs: quality
@@ -115,18 +135,25 @@ jobs:
           CYBARA_SMOKE_HOME: ${{ runner.temp }}/cybara-darwin-x64-home
         run: bash scripts/smoke-standalone-cli.sh ./cybara-darwin-x64
 
-  # ── Create GitHub Release with CLI binaries + checksums ─────────────────────
+  # -- Publish the release ------------------------------------------------------
   release:
     name: Create Release
     needs: [build-cli, smoke-cli-darwin-x64]
     runs-on: ubuntu-latest
+    outputs:
+      tag_name: ${{ steps.tag.outputs.name }}
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Determine tag name
         id: tag
+        env:
+          INPUT_VERSION: ${{ inputs.version }}
         run: |
-          if [[ "$GITHUB_REF" == refs/tags/* ]]; then
+          set -euo pipefail
+          if [[ -n "$INPUT_VERSION" ]]; then
+            echo "name=v${INPUT_VERSION#v}" >> "$GITHUB_OUTPUT"
+          elif [[ "$GITHUB_REF" == refs/tags/* ]]; then
             echo "name=${GITHUB_REF#refs/tags/}" >> "$GITHUB_OUTPUT"
           else
             git fetch --tags
@@ -176,28 +203,34 @@ jobs:
 
   publish-release:
     name: Publish Release
-    needs: release
+    needs: [release]
     runs-on: ubuntu-latest
     permissions:
       contents: write
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - name: Setup Bun
-        uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2
-        with:
-          bun-version: ${{ env.BUN_VERSION }}
       - name: Determine tag name
         id: tag
-        shell: bash
+        env:
+          INPUT_VERSION: ${{ inputs.version }}
         run: |
-          if [[ "$GITHUB_REF" == refs/tags/* ]]; then
+          set -euo pipefail
+          if [[ -n "$INPUT_VERSION" ]]; then
+            echo "name=v${INPUT_VERSION#v}" >> "$GITHUB_OUTPUT"
+          elif [[ "$GITHUB_REF" == refs/tags/* ]]; then
             echo "name=${GITHUB_REF#refs/tags/}" >> "$GITHUB_OUTPUT"
           else
             git fetch --tags
             TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
             echo "name=$TAG" >> "$GITHUB_OUTPUT"
           fi
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2
+        with:
+          bun-version: ${{ env.BUN_VERSION }}
+      - name: Install dependencies
+        run: bash scripts/ci-install.sh --ignore-scripts && bun run scripts/postinstall.ts
       - name: Sync Nix release hashes
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -245,3 +278,32 @@ jobs:
           else
             gh release edit "$TAG" --repo "$GITHUB_REPOSITORY" --draft=false --latest
           fi
+
+  # -- Post-publish verification ------------------------------------------------
+  verify-release:
+    name: Verify published assets
+    needs: [publish-release, release]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check release assets are publicly downloadable
+        env:
+          TAG: ${{ needs.release.outputs.tag_name }}
+        run: |
+          set -euo pipefail
+          echo "Verifying published release ${TAG}"
+          for asset in \
+            "cybara-v${TAG#v}-linux-x64-cli" \
+            "cybara-v${TAG#v}-linux-arm64-cli" \
+            "cybara-v${TAG#v}-darwin-x64-cli" \
+            "cybara-v${TAG#v}-darwin-arm64-cli" \
+            "cybara-v${TAG#v}-windows-x64-cli.exe" \
+            "cybara-v${TAG#v}-windows-arm64-cli.exe" \
+            "checksums.txt"; do
+            url="https://github.com/erature-hub/cybara/releases/download/${TAG}/${asset}"
+            code="$(curl -sS -L -o /dev/null -w '%{http_code}' "$url")"
+            if [[ "$code" != "200" ]]; then
+              echo "Asset not publicly downloadable: $asset (HTTP $code)"
+              exit 1
+            fi
+            echo "OK  $asset"
+          done

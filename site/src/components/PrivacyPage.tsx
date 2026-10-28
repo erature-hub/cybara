@@ -228,7 +228,7 @@ const SECTIONS: PrivacySection[] = [
         </a>{" "}
         or the issue tracker at{" "}
         <a href={GITHUB_URL} target="_blank" rel="noreferrer" className="legal-link">
-          github.com/metaspartan/cybara
+          github.com/erature-hub/cybara
         </a>
         .
       </p>

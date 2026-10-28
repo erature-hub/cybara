@@ -1,9 +1,20 @@
 name: Main Version And Tag
 
+# Computes the release version from the commit count, syncs every version
+# manifest, and pushes the release tag.
+#
+# The Release workflow is tag-driven (on: push: tags: ["v*"]), so pushing the
+# tag here is what starts a release. A tag pushed with GITHUB_TOKEN does not
+# trigger another workflow run, so this workflow also dispatches release.yml
+# explicitly. Without that dispatch the release would never start.
+#
+# Upstream attribution: Cybara is by Carsen Klock, MIT licensed. See NOTICE.md.
+
 on:
   push:
     branches:
       - main
+  workflow_dispatch:
 
 permissions:
   contents: write

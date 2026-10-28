@@ -8,7 +8,7 @@
   "homepage": "https://cybara.ai",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/metaspartan/cybara.git"
+    "url": "git+https://github.com/erature-hub/cybara.git"
   },
   "engines": {
     "vscode": "^1.90.0"

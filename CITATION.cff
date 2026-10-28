@@ -19,7 +19,7 @@ keywords:
   - "bun"
   - "tauri"
 license: "MIT"
-repository-code: "https://github.com/metaspartan/cybara"
+repository-code: "https://github.com/erature-hub/cybara"
 type: software
 version: "1.0.327"
 date-released: "2026-06-23"
@@ -29,5 +29,5 @@ preferred-citation:
   authors:
     - family-names: "Klock"
       given-names: "Carsen"
-  repository-code: "https://github.com/metaspartan/cybara"
+  repository-code: "https://github.com/erature-hub/cybara"
   license: "MIT"

@@ -34,27 +34,27 @@ describe("isNewerVersion", () => {
 
 describe("buildReleaseChecksumUrl", () => {
   test("builds the latest download URL when no tag is given", () => {
-    const url = buildReleaseChecksumUrl("metaspartan/cybara", "cybara-darwin-arm64");
+    const url = buildReleaseChecksumUrl("erature-hub/cybara", "cybara-darwin-arm64");
     expect(url).toBe(
-      "https://github.com/metaspartan/cybara/releases/download/latest/cybara-darwin-arm64.sha256"
+      "https://github.com/erature-hub/cybara/releases/download/latest/cybara-darwin-arm64.sha256"
     );
   });
 
   test("builds a tagged download URL when a tag is given", () => {
-    const url = buildReleaseChecksumUrl("metaspartan/cybara", "cybara-linux-x64", "1.0.186");
+    const url = buildReleaseChecksumUrl("erature-hub/cybara", "cybara-linux-x64", "1.0.186");
     expect(url).toBe(
-      "https://github.com/metaspartan/cybara/releases/download/v1.0.186/cybara-linux-x64.sha256"
+      "https://github.com/erature-hub/cybara/releases/download/v1.0.186/cybara-linux-x64.sha256"
     );
   });
 
   test("builds a Darwin ARM64 checksum URL from a versioned CLI asset", () => {
     const url = buildReleaseChecksumUrl(
-      "metaspartan/cybara",
+      "erature-hub/cybara",
       "cybara-v1.0.1199-darwin-arm64-cli",
       "v1.0.1199"
     );
     expect(url).toBe(
-      "https://github.com/metaspartan/cybara/releases/download/v1.0.1199/cybara-v1.0.1199-darwin-arm64-cli.sha256"
+      "https://github.com/erature-hub/cybara/releases/download/v1.0.1199/cybara-v1.0.1199-darwin-arm64-cli.sha256"
     );
   });
 

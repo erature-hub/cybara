@@ -12,7 +12,7 @@ and how releases are protected.
 Instead, report vulnerabilities privately using GitHub's advisory system:
 
 1. Go to **Security → Advisories → Report a vulnerability** on the
-   [`metaspartan/cybara`](https://github.com/metaspartan/cybara/security/advisories/new)
+   [`erature-hub/cybara`](https://github.com/erature-hub/cybara/security/advisories/new)
    repository, **or**
 2. Email the maintainer directly.
 

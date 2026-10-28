@@ -99,7 +99,7 @@ describe("chat response formatting", () => {
         "<function_calls>",
         '<invoke name="browser">',
         '<parameter name="action">open</parameter>',
-        '<parameter name="url">https://github.com/metaspartan/cybara</parameter>',
+        '<parameter name="url">https://github.com/erature-hub/cybara</parameter>',
         "</invoke>",
         "</function_calls>",
       ].join("\n")
@@ -137,7 +137,7 @@ describe("chat response formatting", () => {
           JSON.stringify(
             {
               name: "browser",
-              arguments: { action: "open", url: "https://github.com/metaspartan/cybara" },
+              arguments: { action: "open", url: "https://github.com/erature-hub/cybara" },
             },
             null,
             2

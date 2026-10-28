@@ -40,11 +40,14 @@ export const NAV_LINKS: readonly NavLink[] = [
   { label: "FAQ", href: "/faq" },
 ];
 
-export const GITHUB_URL = "https://github.com/metaspartan/cybara";
+export const GITHUB_URL = "https://github.com/erature-hub/cybara";
 export const X_URL = "https://x.com/cybaraAI";
 export const DISCORD_URL = "https://discord.gg/zqz3nZj2pJ";
 export const CREATOR_X_URL = "https://x.com/carsenklock";
-export const RELEASES_URL = "https://github.com/metaspartan/cybara/releases/latest";
+export const RELEASES_URL = "https://github.com/erature-hub/cybara/releases/latest";
+// Desktop installers, mobile builds, and the browser extension are published by
+// upstream. This fork ships the standalone CLI only; see NOTICE.md.
+export const UPSTREAM_RELEASES_URL = "https://github.com/metaspartan/cybara/releases/latest";
 export const CYB_TOKEN = {
   symbol: "CYB",
   network: "Solana",
@@ -370,7 +373,7 @@ export const DOWNLOAD_GROUPS: readonly DownloadGroup[] = [
         platform: "Apple Silicon",
         format: ".dmg · arm64",
         icon: "apple",
-        href: RELEASES_URL,
+        href: UPSTREAM_RELEASES_URL,
         assetPattern: /aarch64\.dmg$/i,
       },
       {
@@ -378,7 +381,7 @@ export const DOWNLOAD_GROUPS: readonly DownloadGroup[] = [
         platform: "Intel",
         format: ".dmg · x64",
         icon: "apple",
-        href: RELEASES_URL,
+        href: UPSTREAM_RELEASES_URL,
         assetPattern: /_x64\.dmg$/i,
       },
       {
@@ -386,7 +389,7 @@ export const DOWNLOAD_GROUPS: readonly DownloadGroup[] = [
         platform: "SwiftUI · Apple Silicon",
         format: "CybaraNative.app · arm64",
         icon: "apple",
-        href: RELEASES_URL,
+        href: UPSTREAM_RELEASES_URL,
         assetPattern: /CybaraNative-v[\d.]+-arm64\.zip$/i,
       },
       {
@@ -394,7 +397,7 @@ export const DOWNLOAD_GROUPS: readonly DownloadGroup[] = [
         platform: "Installer",
         format: ".exe · x64",
         icon: "windows",
-        href: RELEASES_URL,
+        href: UPSTREAM_RELEASES_URL,
         assetPattern: /x64-setup\.exe$/i,
       },
       {
@@ -402,7 +405,7 @@ export const DOWNLOAD_GROUPS: readonly DownloadGroup[] = [
         platform: "MSI package",
         format: ".msi · x64",
         icon: "windows",
-        href: RELEASES_URL,
+        href: UPSTREAM_RELEASES_URL,
         assetPattern: /_x64_en-US\.msi$/i,
       },
       {
@@ -410,7 +413,7 @@ export const DOWNLOAD_GROUPS: readonly DownloadGroup[] = [
         platform: "Debian · Ubuntu",
         format: ".deb · x64",
         icon: "linux",
-        href: RELEASES_URL,
+        href: UPSTREAM_RELEASES_URL,
         assetPattern: /_amd64\.deb$/i,
       },
       {
@@ -418,7 +421,7 @@ export const DOWNLOAD_GROUPS: readonly DownloadGroup[] = [
         platform: "Debian · Ubuntu · ARM64",
         format: ".deb · arm64",
         icon: "linux",
-        href: RELEASES_URL,
+        href: UPSTREAM_RELEASES_URL,
         assetPattern: /_arm64\.deb$/i,
       },
       {
@@ -426,7 +429,7 @@ export const DOWNLOAD_GROUPS: readonly DownloadGroup[] = [
         platform: "Fedora · RHEL",
         format: ".rpm · x64",
         icon: "linux",
-        href: RELEASES_URL,
+        href: UPSTREAM_RELEASES_URL,
         assetPattern: /\.x86_64\.rpm$/i,
       },
       {
@@ -434,7 +437,7 @@ export const DOWNLOAD_GROUPS: readonly DownloadGroup[] = [
         platform: "Fedora · RHEL · ARM64",
         format: ".rpm · arm64",
         icon: "linux",
-        href: RELEASES_URL,
+        href: UPSTREAM_RELEASES_URL,
         assetPattern: /\.aarch64\.rpm$/i,
       },
       {
@@ -442,7 +445,7 @@ export const DOWNLOAD_GROUPS: readonly DownloadGroup[] = [
         platform: "Universal",
         format: ".AppImage · x64",
         icon: "linux",
-        href: RELEASES_URL,
+        href: UPSTREAM_RELEASES_URL,
         assetPattern: /(?:amd64|x86_64)\.AppImage$/i,
       },
       {
@@ -450,7 +453,7 @@ export const DOWNLOAD_GROUPS: readonly DownloadGroup[] = [
         platform: "Universal · ARM64",
         format: ".AppImage · arm64",
         icon: "linux",
-        href: RELEASES_URL,
+        href: UPSTREAM_RELEASES_URL,
         assetPattern: /(?:arm64|aarch64)\.AppImage$/i,
       },
     ],
@@ -472,7 +475,7 @@ export const DOWNLOAD_GROUPS: readonly DownloadGroup[] = [
         platform: "Sideload",
         format: "signed .apk",
         icon: "android",
-        href: RELEASES_URL,
+        href: UPSTREAM_RELEASES_URL,
         assetPattern: /-android\.apk$/i,
       },
       {
@@ -480,7 +483,7 @@ export const DOWNLOAD_GROUPS: readonly DownloadGroup[] = [
         platform: "App Store",
         format: "Submission in progress",
         icon: "apple",
-        href: RELEASES_URL,
+        href: UPSTREAM_RELEASES_URL,
         comingSoon: true,
       },
       {
@@ -488,7 +491,7 @@ export const DOWNLOAD_GROUPS: readonly DownloadGroup[] = [
         platform: "Sideload · iPhone · iPad",
         format: "signed .ipa",
         icon: "apple",
-        href: RELEASES_URL,
+        href: UPSTREAM_RELEASES_URL,
         assetPattern: /-ios\.ipa$/i,
       },
     ],
@@ -502,7 +505,7 @@ export const DOWNLOAD_GROUPS: readonly DownloadGroup[] = [
         platform: "Chrome · Edge · Brave",
         format: ".zip · load unpacked",
         icon: "extension",
-        href: RELEASES_URL,
+        href: UPSTREAM_RELEASES_URL,
         assetPattern: /cybara-browser-extension-v[\d.]+\.zip$/i,
       },
     ],
@@ -601,8 +604,8 @@ export const DOWNLOAD_GROUPS: readonly DownloadGroup[] = [
         platform: "flake · Linux & macOS",
         format: "reproducible",
         icon: "nix",
-        href: "https://github.com/metaspartan/cybara",
-        command: "nix run github:metaspartan/cybara",
+        href: "https://github.com/erature-hub/cybara",
+        command: "nix run github:erature-hub/cybara",
       },
       {
         name: "Docker Hub",

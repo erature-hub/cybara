@@ -54,8 +54,11 @@ the original project by [Carsen Klock](https://github.com/metaspartan). It is ma
 **What this fork preserves**
 
 - **License.** MIT — see [LICENSE.md](LICENSE.md). The original copyright notice is retained.
-- **Attribution.** [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md) is unchanged, and upstream
-  authorship is credited in `package.json` (`author`) and [CITATION.cff](CITATION.cff).
+- **Attribution.** [NOTICE.md](NOTICE.md) records the fork relationship, upstream authorship, and
+  the third-party notice set. [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md) is unchanged, and
+  upstream authorship is credited in `package.json` (`author`) and [CITATION.cff](CITATION.cff).
+- **Upstream fixes carried forward.** The tool-call argument repair from
+  [upstream PR #122](https://github.com/metaspartan/cybara/pull/122) is included.
 - **Upstream project identity.** The project name, logo, and trademark remain the property of
   the upstream author.
 
@@ -67,8 +70,10 @@ Issues specific to the CLI in this fork belong here; everything else belongs ups
 
 ## Quick Install
 
-Prefer the desktop GUI? Download Cybara for macOS, Windows, or Linux from
-[cybara.ai/download](https://cybara.ai/download), or get every installer directly from
+Prefer the desktop GUI? This fork does not publish desktop installers — download
+Cybara for macOS, Windows, or Linux from
+[upstream releases](https://github.com/metaspartan/cybara/releases/latest). The standalone CLI
+is published here, under
 [GitHub Releases](https://github.com/erature-hub/cybara/releases).
 
 Install the latest Cybara CLI on macOS or Linux:

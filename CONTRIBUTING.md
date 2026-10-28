@@ -23,7 +23,7 @@ mentions npm-style commands, translate them to Bun before running:
 ## Local setup
 
 ```bash
-git clone https://github.com/metaspartan/cybara.git
+git clone https://github.com/erature-hub/cybara.git
 cd cybara
 git switch dev
 git pull --ff-only origin dev

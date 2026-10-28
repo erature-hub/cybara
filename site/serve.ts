@@ -14,7 +14,7 @@ import {
 const root = resolve(import.meta.dir, "dist");
 const port = Number(process.env.PORT ?? 3399);
 const indexPath = join(root, "index.html");
-const releasesApi = "https://api.github.com/repos/metaspartan/cybara/releases";
+const releasesApi = "https://api.github.com/repos/erature-hub/cybara/releases";
 const downloadCacheTtlMs = 10 * 60 * 1000;
 
 async function fetchDownloadTotal(): Promise<number> {

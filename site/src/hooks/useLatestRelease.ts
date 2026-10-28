@@ -7,7 +7,7 @@ import {
   type GithubDownloadRelease,
 } from "../../downloadStats";
 
-const LATEST_RELEASE_API = "https://api.github.com/repos/metaspartan/cybara/releases/latest";
+const LATEST_RELEASE_API = "https://api.github.com/repos/erature-hub/cybara/releases/latest";
 
 export interface ReleaseAsset {
   name: string;
@@ -134,7 +134,7 @@ export function shortSha(sha256?: string): string {
 }
 
 const DOWNLOAD_TOTAL_API = "/api/downloads";
-const ALL_RELEASES_API = "https://api.github.com/repos/metaspartan/cybara/releases";
+const ALL_RELEASES_API = "https://api.github.com/repos/erature-hub/cybara/releases";
 const DOWNLOAD_TOTAL_CACHE_KEY = "cybara.site.downloadTotal.v7";
 const DOWNLOAD_TOTAL_CACHE_TTL_MS = 10 * 60 * 1000;
 

@@ -31,17 +31,17 @@ describe("versioning helpers", () => {
 
   test("normalizes release tags and URLs", () => {
     expect(normalizeReleaseTag("v1.2.3")).toBe("1.2.3");
-    expect(buildGitHubReleaseApiUrl("metaspartan/cybara", "v1.2.3")).toBe(
-      "https://api.github.com/repos/metaspartan/cybara/releases/tags/v1.2.3"
+    expect(buildGitHubReleaseApiUrl("erature-hub/cybara", "v1.2.3")).toBe(
+      "https://api.github.com/repos/erature-hub/cybara/releases/tags/v1.2.3"
     );
-    expect(buildGitHubReleaseApiUrl("metaspartan/cybara")).toBe(
-      "https://api.github.com/repos/metaspartan/cybara/releases/latest"
+    expect(buildGitHubReleaseApiUrl("erature-hub/cybara")).toBe(
+      "https://api.github.com/repos/erature-hub/cybara/releases/latest"
     );
-    expect(buildGitHubUpdaterEndpoint("metaspartan/cybara")).toBe(
-      "https://github.com/metaspartan/cybara/releases/latest/download/latest.json"
+    expect(buildGitHubUpdaterEndpoint("erature-hub/cybara")).toBe(
+      "https://github.com/erature-hub/cybara/releases/latest/download/latest.json"
     );
-    expect(buildGitHubReleasesPageUrl("metaspartan/cybara")).toBe(
-      "https://github.com/metaspartan/cybara/releases"
+    expect(buildGitHubReleasesPageUrl("erature-hub/cybara")).toBe(
+      "https://github.com/erature-hub/cybara/releases"
     );
   });
 
@@ -85,14 +85,14 @@ describe("versioning helpers", () => {
 
   test("builds a release-only Tauri updater patch", () => {
     expect(
-      buildTauriReleaseConfigPatch("metaspartan/cybara", TAURI_DEVELOPMENT_UPDATER_PUBLIC_KEY, null)
+      buildTauriReleaseConfigPatch("erature-hub/cybara", TAURI_DEVELOPMENT_UPDATER_PUBLIC_KEY, null)
     ).toEqual({
       bundle: {
         createUpdaterArtifacts: true,
       },
       plugins: {
         updater: {
-          endpoints: ["https://github.com/metaspartan/cybara/releases/latest/download/latest.json"],
+          endpoints: ["https://github.com/erature-hub/cybara/releases/latest/download/latest.json"],
           pubkey: TAURI_DEVELOPMENT_UPDATER_PUBLIC_KEY,
           windows: {
             installMode: "passive",
@@ -169,12 +169,12 @@ describe("versioning helpers", () => {
   test("rejects draft `untagged-` download URLs (updater 404 guardrail)", () => {
     expect(
       isDraftReleaseUrl(
-        "https://github.com/metaspartan/cybara/releases/download/untagged-c7272da8b1134df24a19/Cybara_1.0.627_x64_en-US.msi"
+        "https://github.com/erature-hub/cybara/releases/download/untagged-c7272da8b1134df24a19/Cybara_1.0.627_x64_en-US.msi"
       )
     ).toBe(true);
     expect(
       isDraftReleaseUrl(
-        "https://github.com/metaspartan/cybara/releases/download/v1.0.627/Cybara_1.0.627_x64_en-US.msi"
+        "https://github.com/erature-hub/cybara/releases/download/v1.0.627/Cybara_1.0.627_x64_en-US.msi"
       )
     ).toBe(false);
 
@@ -183,7 +183,7 @@ describe("versioning helpers", () => {
       platforms: {
         "windows-x86_64": {
           signature: "sig",
-          url: "https://github.com/metaspartan/cybara/releases/download/untagged-abc123/Cybara_1.0.627_x64_en-US.msi",
+          url: "https://github.com/erature-hub/cybara/releases/download/untagged-abc123/Cybara_1.0.627_x64_en-US.msi",
         },
       },
     };
