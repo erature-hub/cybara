@@ -1,7 +1,7 @@
 FROM debian:bookworm-slim
 
 ARG VERSION
-ARG REPO=metaspartan/cybara
+ARG REPO=erature-hub/cybara
 ARG TARGETARCH
 
 RUN apt-get update \

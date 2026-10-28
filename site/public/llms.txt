@@ -43,7 +43,7 @@ Cybara imports data from other agents. Run `cybara migrate --from openclaw` or `
 
 ## Links
 
-- Source and releases: https://github.com/metaspartan/cybara
+- Source and releases: https://github.com/erature-hub/cybara
 - Install (macOS/Linux CLI): curl -fsSL https://cybara.ai/install.sh | bash
 - Install (Windows PowerShell): irm https://cybara.ai/install.ps1 | iex
 - License: MIT

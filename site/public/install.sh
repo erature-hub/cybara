@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-REPO="${CYBARA_RELEASE_REPOSITORY:-metaspartan/cybara}"
+REPO="${CYBARA_RELEASE_REPOSITORY:-erature-hub/cybara}"
 VERSION="${CYBARA_VERSION:-latest}"
 
 if [ -n "${CYBARA_INSTALL_DIR:-}" ]; then
@@ -31,7 +31,7 @@ Usage:
 
 Environment:
   CYBARA_VERSION              Release tag to install (default: latest)
-  CYBARA_RELEASE_REPOSITORY   GitHub repository (default: metaspartan/cybara)
+  CYBARA_RELEASE_REPOSITORY   GitHub repository (default: erature-hub/cybara)
   CYBARA_INSTALL_DIR          Target directory (default: ~/.local/bin)
 EOF
       exit 0

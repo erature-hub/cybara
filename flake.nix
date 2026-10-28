@@ -19,7 +19,7 @@
         };
         slug = slugs.${system};
         binary = pkgs.fetchurl {
-          url = "https://github.com/metaspartan/cybara/releases/download/v${release.version}/cybara-v${release.version}-${slug}-cli";
+          url = "https://github.com/erature-hub/cybara/releases/download/v${release.version}/cybara-v${release.version}-${slug}-cli";
           hash = release.hashes.${system};
         };
         cybara = pkgs.stdenv.mkDerivation {

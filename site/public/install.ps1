@@ -2,7 +2,7 @@
 [CmdletBinding()]
 param(
     [string]$Version = $(if ($env:CYBARA_VERSION) { $env:CYBARA_VERSION } else { "latest" }),
-    [string]$Repo = $(if ($env:CYBARA_RELEASE_REPOSITORY) { $env:CYBARA_RELEASE_REPOSITORY } else { "metaspartan/cybara" }),
+    [string]$Repo = $(if ($env:CYBARA_RELEASE_REPOSITORY) { $env:CYBARA_RELEASE_REPOSITORY } else { "erature-hub/cybara" }),
     [string]$InstallDir = $(if ($env:CYBARA_INSTALL_DIR) { $env:CYBARA_INSTALL_DIR } else { Join-Path $env:LOCALAPPDATA "Programs\cybara" })
 )
 

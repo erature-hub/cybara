@@ -26,10 +26,10 @@
   "homepage": "https://cybara.ai",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/metaspartan/cybara.git"
+    "url": "git+https://github.com/erature-hub/cybara.git"
   },
   "bugs": {
-    "url": "https://github.com/metaspartan/cybara/issues"
+    "url": "https://github.com/erature-hub/cybara/issues"
   },
   "license": "MIT",
   "os": [

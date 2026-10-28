@@ -5,7 +5,7 @@ const https = require("https");
 const crypto = require("crypto");
 
 const pkg = require(path.join(__dirname, "..", "package.json"));
-const REPO = "metaspartan/cybara";
+const REPO = "erature-hub/cybara";
 
 function slugFor(platform, arch) {
   const map = {
