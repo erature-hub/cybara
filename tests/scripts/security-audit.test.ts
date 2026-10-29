@@ -1,10 +1,11 @@
 import { describe, expect, test } from "bun:test";
-import { readFileSync, mkdtempSync, mkdirSync, writeFileSync, rmSync } from "fs";
-import { join } from "node:path";
 import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "fs";
 import {
-  chunkPackages,
   auditWorkspace,
+  chunkPackages,
+  hasVerifiedDeepmergeProtoPatch,
   hasVerifiedSignatureParserPatch,
   isAdvisoryOutage,
   isTransportKill,
@@ -198,6 +199,36 @@ test("signature-parser audit exception requires installed source and exact regis
   }
 });
 
+test("deepmerge prototype-poisoning audit exception requires installed source and exact registered patch", () => {
+  const root = mkdtempSync(join(tmpdir(), "cybara-deepmerge-audit-"));
+  try {
+    expect(hasVerifiedDeepmergeProtoPatch(root)).toBe(false);
+    writeFileSync(
+      join(root, "package.json"),
+      JSON.stringify({
+        patchedDependencies: { "deepmerge@4.3.1": "patches/deepmerge@4.3.1.patch" },
+      })
+    );
+    expect(hasVerifiedDeepmergeProtoPatch(root)).toBe(false);
+    mkdirSync(join(root, "node_modules/deepmerge/dist"), { recursive: true });
+    const source = join(root, "node_modules/deepmerge/dist/cjs.js");
+    writeFileSync(source, "if (propertyIsUnsafe(target, key))");
+    expect(hasVerifiedDeepmergeProtoPatch(root)).toBe(false);
+    writeFileSync(
+      source,
+      "function propertyIsForbidden(key) { return key === '__proto__' }\nif (propertyIsForbidden(key) || propertyIsUnsafe(target, key))"
+    );
+    expect(hasVerifiedDeepmergeProtoPatch(root)).toBe(true);
+    writeFileSync(
+      join(root, "package.json"),
+      JSON.stringify({ patchedDependencies: { "deepmerge@4.3.1": "wrong.patch" } })
+    );
+    expect(hasVerifiedDeepmergeProtoPatch(root)).toBe(false);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
 test("verified mobile patch exceptions reach the actual audit runner", async () => {
   let received: ReadonlySet<string> = new Set();
   const result = await auditWorkspace(
@@ -214,10 +245,12 @@ test("verified mobile patch exceptions reach the actual audit runner", async () 
   );
   expect(result.status).toBe("ok");
   expect(received.has("GHSA-86w9-cpqp-85rv")).toBe(true);
+  expect(received.has("GHSA-gcqx-w48m-w2h4")).toBe(true);
   const root = await auditWorkspace(
     { label: "root", lockfile: "bun.lock", cwd: process.cwd(), ignored: new Set() },
     (workspace) => {
       expect(workspace.ignored.has("GHSA-86w9-cpqp-85rv")).toBe(false);
+      expect(workspace.ignored.has("GHSA-gcqx-w48m-w2h4")).toBe(false);
       return { exitCode: 0, signalCode: null, stderr: "" };
     }
   );

@@ -124,6 +124,25 @@ export function hasVerifiedBracesDepthGuardPatch(cwd: string): boolean {
   }
 }
 
+export function hasVerifiedDeepmergeProtoPatch(cwd: string): boolean {
+  try {
+    const parsed: unknown = JSON.parse(readFileSync(join(cwd, "package.json"), "utf8"));
+    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) return false;
+    const manifest = parsed as Record<string, unknown>;
+    const patched = manifest.patchedDependencies;
+    if (!patched || typeof patched !== "object" || Array.isArray(patched)) return false;
+    if ((patched as Record<string, unknown>)["deepmerge@4.3.1"] !== "patches/deepmerge@4.3.1.patch")
+      return false;
+    const source = readFileSync(join(cwd, "node_modules/deepmerge/dist/cjs.js"), "utf8");
+    return (
+      source.includes("function propertyIsForbidden(key)") &&
+      source.includes("if (propertyIsForbidden(key) || propertyIsUnsafe(target, key))")
+    );
+  } catch {
+    return false;
+  }
+}
+
 function extractPackagesSection(source: string): string {
   const marker = `"packages"`;
   const start = source.indexOf(marker);
@@ -304,8 +323,18 @@ export async function auditWorkspace(
       detail: "signature parser security patch is missing or invalid",
     };
   }
+  if (ws.label === "mobile" && !hasVerifiedDeepmergeProtoPatch(ws.cwd)) {
+    return {
+      status: "failed",
+      source: "bun-audit",
+      detail: "deepmerge prototype-poisoning security patch is missing or invalid",
+    };
+  }
   const workspaceIgnored = new Set(ws.ignored);
-  if (ws.label === "mobile") workspaceIgnored.add("GHSA-86w9-cpqp-85rv");
+  if (ws.label === "mobile") {
+    workspaceIgnored.add("GHSA-86w9-cpqp-85rv");
+    workspaceIgnored.add("GHSA-gcqx-w48m-w2h4");
+  }
   if (ws.label === "root" || ws.label === "mobile") {
     if (!hasVerifiedBracesDepthGuardPatch(ws.cwd)) {
       return {
