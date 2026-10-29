@@ -1,8 +1,9 @@
 import { existsSync } from "fs";
 import { readFile, stat } from "fs/promises";
 import { dirname, relative } from "path";
-import { getGitStatus } from "./git-api";
+import { spawnWindowOptions } from "../core/platform";
 import { readSubprocessStreamAsText } from "../core/subprocess-output";
+import { getGitStatus } from "./git-api";
 import type { IdeBlameLine, IdeBlameResult, IdeUrlResult } from "./ide-api";
 import {
   isIdePathAllowed as isPathAllowed,
@@ -131,6 +132,7 @@ function getRepositoryCommitBaseUrl(repoRoot: string): string | null {
     cwd: repoRoot,
     stdout: "pipe",
     stderr: "pipe",
+    ...spawnWindowOptions(),
   });
   if ((proc.exitCode ?? 1) !== 0) return null;
   const remoteUrl = proc.stdout.toString().trim();
@@ -302,6 +304,7 @@ export async function getFileBlame(
         cwd: gitStatus.root,
         stdout: "pipe",
         stderr: "pipe",
+        ...spawnWindowOptions(),
       }
     );
     const [stdout, stderr, exitCode] = await Promise.all([

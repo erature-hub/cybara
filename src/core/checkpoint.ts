@@ -1,15 +1,16 @@
 import {
   existsSync,
-  mkdirSync,
-  writeFileSync,
-  readFileSync,
-  readdirSync,
-  rmSync,
-  unlinkSync,
-  statSync,
   lstatSync,
+  mkdirSync,
+  readdirSync,
+  readFileSync,
+  rmSync,
+  statSync,
+  unlinkSync,
+  writeFileSync,
 } from "fs";
 import { isAbsolute, join, relative, resolve } from "path";
+import { spawnWindowOptions } from "./platform";
 import { buildSubprocessEnvironment } from "./subprocess-env";
 import { readSubprocessStreamAsText } from "./subprocess-output";
 
@@ -77,6 +78,7 @@ async function execGit(args: string[], cwd: string, env?: Record<string, string>
       stdout: "pipe",
       stderr: "pipe",
       env: buildSubprocessEnvironment(env),
+      ...spawnWindowOptions(),
     }
   );
   const [stdout, stderr, exitCode] = await Promise.all([

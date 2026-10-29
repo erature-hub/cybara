@@ -19,12 +19,12 @@ import {
   MAX_PDF_BYTES,
   SCANNED_PDF_NOTICE,
 } from "../../pdf-text";
-import { commandWorks, normalizePath } from "../../platform";
+import { commandWorks, normalizePath, spawnWindowOptions } from "../../platform";
 import { readFileLines } from "../file-read";
-import { readBatchInOrder } from "../read-batch";
 import { searchFiles } from "../file-search";
 import type { ToolContext } from "../index";
 import { assertReadablePath, assertWritablePath } from "../path-policy";
+import { readBatchInOrder } from "../read-batch";
 import { readablePathOptions } from "../sensitive-read-policy";
 import { applyHashlineEdits, formatHashlines, splitFileLines } from "./hashline";
 
@@ -910,6 +910,7 @@ async function searchWithRipgrep(
     const process = Bun.spawn(["rg", ...args], {
       stdout: "pipe",
       stderr: "ignore",
+      ...spawnWindowOptions(),
     });
     const stop = (): void => process.kill();
     const timeout = setTimeout(stop, 30_000);

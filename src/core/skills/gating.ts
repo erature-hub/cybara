@@ -1,10 +1,11 @@
 import { platform } from "os";
+import { spawnWindowOptions } from "../platform";
 import type {
-  SkillEntry,
-  SkillStatus,
   SkillEligibilityContext,
-  SkillsConfig,
+  SkillEntry,
   SkillMetadata,
+  SkillStatus,
+  SkillsConfig,
 } from "./types";
 
 function fallbackMetadataForSkill(skillName: string): SkillMetadata | undefined {
@@ -47,6 +48,7 @@ function probeBinary(bin: string): boolean {
     const result = Bun.spawnSync([checkCmd, bin], {
       stdout: "ignore",
       stderr: "ignore",
+      ...spawnWindowOptions(),
     });
     return (result.exitCode ?? 1) === 0;
   } catch {
@@ -73,7 +75,11 @@ export async function prewarmBinaryAvailability(bins: string[]): Promise<void> {
   const probes = await Promise.all(
     pending.map(async (bin) => {
       try {
-        const proc = Bun.spawn([checkCmd, bin], { stdout: "ignore", stderr: "ignore" });
+        const proc = Bun.spawn([checkCmd, bin], {
+          stdout: "ignore",
+          stderr: "ignore",
+          ...spawnWindowOptions(),
+        });
         return [bin, (await proc.exited) === 0] as const;
       } catch {
         return [bin, false] as const;

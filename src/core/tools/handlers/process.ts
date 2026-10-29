@@ -3,7 +3,7 @@ import { appendFile } from "fs/promises";
 import { config } from "../../config";
 import { createLogger } from "../../logger";
 import { homeDir } from "../../paths";
-import { getPathSeparator, isWindows, shellEscapeArg } from "../../platform";
+import { getPathSeparator, isWindows, shellEscapeArg, spawnWindowOptions } from "../../platform";
 import { buildSandboxedShellPlan } from "../../sandbox";
 import { runInRemoteSandbox } from "../../sandbox/remote-sandbox";
 import {
@@ -184,6 +184,7 @@ async function runCapturedProcess(options: CapturedProcessOptions): Promise<Capt
     stdout: "pipe",
     stderr: "pipe",
     detached: process.platform !== "win32",
+    ...spawnWindowOptions(),
   });
   const key = String(proc.pid);
   let timedOut = false;
@@ -350,6 +351,7 @@ export async function handleExec(
         stdout: "ignore",
         stderr: "ignore",
         detached: process.platform !== "win32",
+        ...spawnWindowOptions(),
       });
       const key = String(proc.pid);
       runningProcesses.set(key, { pid: proc.pid, command, startedAt: new Date(startedAt), proc });

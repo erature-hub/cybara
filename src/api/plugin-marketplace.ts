@@ -14,6 +14,7 @@ import { tmpdir } from "os";
 import { basename, join, resolve, sep } from "path";
 
 import { resolveCybaraHome } from "../core/cybara-home";
+import { spawnWindowOptions } from "../core/platform";
 import {
   CYBARA_PLUGIN_MANIFEST,
   installLocalPluginFromPath,
@@ -419,6 +420,7 @@ async function runGit(args: string[], cwd: string): Promise<void> {
     cwd,
     stdout: "ignore",
     stderr: "pipe",
+    ...spawnWindowOptions(),
   });
   let timer: ReturnType<typeof setTimeout> | undefined;
   const timeout = new Promise<never>((_resolve, reject) => {
