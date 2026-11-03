@@ -25,7 +25,9 @@ describe("desktop update settings", () => {
     expect(updateSettings).toContain('label="SHA-256"');
     expect(updateSettings).toContain('label="Executable"');
     expect(routes).toContain('"GET /api/build-info"');
-    expect(routes).toContain("getBuildProvenance()");
+    // The provenance call may be made directly or through the aggregated
+    // build-info accessor; both keep the same endpoint contract.
+    expect(routes).toMatch(/getBuildProvenance\(\)|RELEASE_BUILD_INFO\.provenance\(\)/);
   });
 
   test("stamps release sidecars with the source commit", () => {
