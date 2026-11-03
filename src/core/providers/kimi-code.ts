@@ -87,6 +87,8 @@ function createDeviceId(): string {
 }
 
 export function kimiCodeIdentityHeaders(): Record<string, string> {
+  // The version travels in an HTTP header, so the channel marker must not
+  // introduce characters outside the printable ASCII range.
   const version = asciiHeader(getAppVersion(), "unknown");
   return {
     "User-Agent": `Cybara/${version}`,

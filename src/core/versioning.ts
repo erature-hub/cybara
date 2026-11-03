@@ -142,6 +142,10 @@ export function buildReleaseChecksumUrl(
 }
 
 export function compareVersions(left: string, right: string): number {
+  // Build metadata after "+" is not part of version precedence, so the fork
+  // channel marker is ignored here. Ordering stays numeric within a channel,
+  // which keeps the self-updater correct when it compares a released tag
+  // against the running build.
   const strip = (value: string) => value.trim().replace(/^v/i, "").split(/[+-]/)[0];
   const leftParts = strip(left).split(".");
   const rightParts = strip(right).split(".");
