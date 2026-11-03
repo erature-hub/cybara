@@ -1,5 +1,5 @@
 import { agentManager } from "../../core/agent";
-import { getAppVersion } from "../../core/build-info";
+import { FORK_VERSION_CHANNEL, getAppVersion } from "../../core/build-info";
 import { config } from "../../core/config";
 import { tables } from "../../core/database";
 import { type ProviderType, providerManager, providers } from "../../core/providers";
@@ -65,6 +65,7 @@ function healthResponse(): unknown {
     timestamp: now.toISOString(),
     uptime: process.uptime(),
     version: getAppVersion(),
+    release_channel: FORK_VERSION_CHANNEL,
     instance_id: gatewayInstanceId(),
     compatibility: {
       api_version: CYBARA_GATEWAY_API_VERSION,

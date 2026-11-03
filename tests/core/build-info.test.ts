@@ -3,6 +3,7 @@ import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import {
+  applyReleaseChannel,
   getAppVersion,
   hashFileSha256,
   readGitCommit,
@@ -51,9 +52,9 @@ describe("build provenance", () => {
 });
 
 describe("getAppVersion", () => {
-  test("returns the package version by default", () => {
+  test("returns the package version by default, marked with the fork channel", () => {
     delete process.env.CYBARA_VERSION;
-    expect(getAppVersion()).toMatch(/^\d+\.\d+\.\d+/);
+    expect(getAppVersion()).toMatch(/^\d+\.\d+\.\d+\+fork\.\d+$/);
   });
 
   test("CYBARA_VERSION overrides, whitespace trimmed to fallback", () => {
@@ -61,7 +62,18 @@ describe("getAppVersion", () => {
     expect(getAppVersion()).toBe("9.9.9-test");
 
     process.env.CYBARA_VERSION = "   ";
-    expect(getAppVersion()).toMatch(/^\d+\.\d+\.\d+/);
+    expect(getAppVersion()).toMatch(/^\d+\.\d+\.\d+\+fork\.\d+$/);
+  });
+
+  test("the fork channel marker is applied exactly once", () => {
+    process.env.CYBARA_VERSION = "9.9.9";
+    expect(getAppVersion()).toBe("9.9.9+fork.1");
+    expect(applyReleaseChannel("9.9.9+fork.1")).toBe("9.9.9+fork.1");
+  });
+
+  test("a non-numeric version is passed through unchanged", () => {
+    process.env.CYBARA_VERSION = "dev-build";
+    expect(getAppVersion()).toBe("dev-build");
   });
 });
 

@@ -97,6 +97,7 @@ See [Desktop Guide](./desktop.md) for platform-specific build info.
 | Guide | Description |
 |-------|-------------|
 | [Architecture](./architecture.md) | Platform design and data flow |
+| [Fork Guide](./FORK.md) | Fork scope, release channel, divergence from upstream |
 | [Agent Runtime](./agent-runtime.md) | Prompt composition, tool policy, memory, planning, and subagents |
 | [CLI Reference](./cli.md) | Command-line interface |
 | [Plugins](./plugins.md) | Installable plugin runtime and manifests |

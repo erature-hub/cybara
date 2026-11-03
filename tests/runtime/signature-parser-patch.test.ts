@@ -45,15 +45,20 @@ test("signature verification rejects unconsumed nested algorithm elements but ac
   expect(parsed.malformed_results).toEqual([false, false, false, false]);
 });
 
-test("mobile signature-parser patch is pinned to the installed dependency", async () => {
+test("mobile signature-parser fix is pinned to the upstream-patched dependency", async () => {
   const manifest = (await Bun.file(
     join(import.meta.dir, "../../apps/mobile/package.json")
   ).json()) as {
+    overrides?: Record<string, string>;
     patchedDependencies?: Record<string, string>;
   };
-  expect(manifest.patchedDependencies?.["node-forge@1.4.0"]).toBe("patches/node-forge@1.4.0.patch");
+  expect(manifest.overrides?.["node-forge"]).toBe("1.4.1");
+  expect(manifest.patchedDependencies?.["node-forge@1.4.0"]).toBeUndefined();
   const source = await Bun.file(
     join(import.meta.dir, "../../apps/mobile/node_modules/node-forge/lib/rsa.js")
   ).text();
-  expect(source).toContain("obj.value[0].value.length");
+  // Upstream 1.4.1 requires a canonical DER DigestInfo by re-encoding the
+  // parsed structure and comparing it byte-for-byte with the signature.
+  expect(source).toContain("var withParameters = _encodeDigestInfo(oid, capture.digest, true);");
+  expect(source).toContain("d.substring(0, withParameters.length) !== withParameters");
 });

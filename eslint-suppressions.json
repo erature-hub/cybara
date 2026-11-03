@@ -1,0 +1,715 @@
+{
+  "apps/mobile/src/lib/apiBots.ts": {
+    "no-duplicate-imports": {
+      "count": 1
+    }
+  },
+  "apps/mobile/src/lib/chat-format.ts": {
+    "no-control-regex": {
+      "count": 1
+    }
+  },
+  "apps/mobile/src/lib/connection.ts": {
+    "no-useless-assignment": {
+      "count": 2
+    },
+    "preserve-caught-error": {
+      "count": 2
+    }
+  },
+  "apps/mobile/src/lib/storage.ts": {
+    "no-useless-assignment": {
+      "count": 1
+    }
+  },
+  "apps/mobile/src/screens/dashboardAdvancedSettingsPanels.tsx": {
+    "react-hooks/exhaustive-deps": {
+      "count": 1
+    }
+  },
+  "apps/mobile/src/screens/dashboardChat.tsx": {
+    "@typescript-eslint/no-non-null-assertion": {
+      "count": 1
+    }
+  },
+  "src/api/chat-agent-prompt.ts": {
+    "no-useless-assignment": {
+      "count": 1
+    }
+  },
+  "src/api/chat-runtime.ts": {
+    "no-duplicate-imports": {
+      "count": 1
+    }
+  },
+  "src/api/chat-turn-context.ts": {
+    "no-duplicate-imports": {
+      "count": 1
+    }
+  },
+  "src/api/git-api.ts": {
+    "no-control-regex": {
+      "count": 1
+    }
+  },
+  "src/api/provider-oauth-device.ts": {
+    "no-useless-assignment": {
+      "count": 1
+    }
+  },
+  "src/api/queries.ts": {
+    "@typescript-eslint/no-non-null-assertion": {
+      "count": 4
+    }
+  },
+  "src/api/routes.ts": {
+    "@typescript-eslint/no-non-null-assertion": {
+      "count": 67
+    }
+  },
+  "src/api/routes/mcp.ts": {
+    "@typescript-eslint/no-non-null-assertion": {
+      "count": 11
+    }
+  },
+  "src/api/routes/metrics.ts": {
+    "@typescript-eslint/no-non-null-assertion": {
+      "count": 3
+    }
+  },
+  "src/api/routes/runtime-routes.ts": {
+    "@typescript-eslint/no-non-null-assertion": {
+      "count": 48
+    }
+  },
+  "src/api/routes/session-message-details.ts": {
+    "@typescript-eslint/no-non-null-assertion": {
+      "count": 5
+    }
+  },
+  "src/api/routes/speech.ts": {
+    "preserve-caught-error": {
+      "count": 1
+    }
+  },
+  "src/api/routes/wallet.ts": {
+    "preserve-caught-error": {
+      "count": 1
+    }
+  },
+  "src/api/session-goal-routes.ts": {
+    "@typescript-eslint/no-non-null-assertion": {
+      "count": 6
+    }
+  },
+  "src/api/subagents.ts": {
+    "no-duplicate-imports": {
+      "count": 1
+    }
+  },
+  "src/cli/tui/terminal.ts": {
+    "no-control-regex": {
+      "count": 1
+    }
+  },
+  "src/core/account-connectors/microsoft.ts": {
+    "no-useless-escape": {
+      "count": 3
+    }
+  },
+  "src/core/acp/server.ts": {
+    "no-duplicate-imports": {
+      "count": 1
+    }
+  },
+  "src/core/agent-eval/assertions.ts": {
+    "preserve-caught-error": {
+      "count": 1
+    }
+  },
+  "src/core/agent-provider-cloud-runtime.ts": {
+    "no-useless-assignment": {
+      "count": 1
+    }
+  },
+  "src/core/agent-provider-common-runtime.ts": {
+    "no-duplicate-imports": {
+      "count": 1
+    }
+  },
+  "src/core/browser/automation-driver.ts": {
+    "no-control-regex": {
+      "count": 1
+    }
+  },
+  "src/core/browser/import-parsers.ts": {
+    "no-control-regex": {
+      "count": 1
+    },
+    "no-useless-escape": {
+      "count": 1
+    }
+  },
+  "src/core/browser/profiles.ts": {
+    "prefer-const": {
+      "count": 1
+    }
+  },
+  "src/core/browser/pw-manager.ts": {
+    "preserve-caught-error": {
+      "count": 1
+    }
+  },
+  "src/core/browser/supervision.ts": {
+    "no-useless-assignment": {
+      "count": 1
+    }
+  },
+  "src/core/channels/adapters/discord.ts": {
+    "@typescript-eslint/no-non-null-assertion": {
+      "count": 2
+    },
+    "no-useless-assignment": {
+      "count": 2
+    }
+  },
+  "src/core/channels/adapters/email.ts": {
+    "no-useless-assignment": {
+      "count": 1
+    }
+  },
+  "src/core/channels/zulip-events.ts": {
+    "no-useless-assignment": {
+      "count": 1
+    }
+  },
+  "src/core/coalesced-work.ts": {
+    "prefer-const": {
+      "count": 1
+    }
+  },
+  "src/core/cron/file-lock.ts": {
+    "no-constant-condition": {
+      "count": 1
+    }
+  },
+  "src/core/destructive-content.ts": {
+    "no-useless-escape": {
+      "count": 2
+    }
+  },
+  "src/core/external-telemetry.ts": {
+    "no-useless-assignment": {
+      "count": 1
+    }
+  },
+  "src/core/kanban.ts": {
+    "@typescript-eslint/no-non-null-assertion": {
+      "count": 2
+    }
+  },
+  "src/core/keyed-serial-task-queue.ts": {
+    "prefer-const": {
+      "count": 1
+    }
+  },
+  "src/core/llm/anthropic-sdk-transport.ts": {
+    "@typescript-eslint/no-non-null-assertion": {
+      "count": 1
+    }
+  },
+  "src/core/llm/provider-image-input.ts": {
+    "@typescript-eslint/no-non-null-assertion": {
+      "count": 3
+    },
+    "no-duplicate-imports": {
+      "count": 1
+    }
+  },
+  "src/core/llm/session-token-usage.ts": {
+    "no-duplicate-imports": {
+      "count": 1
+    }
+  },
+  "src/core/local-speech.ts": {
+    "preserve-caught-error": {
+      "count": 3
+    }
+  },
+  "src/core/lsp/bundled-ts.ts": {
+    "@typescript-eslint/no-non-null-assertion": {
+      "count": 1
+    }
+  },
+  "src/core/memory/embeddings.ts": {
+    "no-useless-assignment": {
+      "count": 1
+    }
+  },
+  "src/core/memory/transformers-embedding-worker-client.ts": {
+    "no-duplicate-imports": {
+      "count": 1
+    }
+  },
+  "src/core/memory/vector-store.ts": {
+    "no-useless-assignment": {
+      "count": 1
+    }
+  },
+  "src/core/mobile-devices.ts": {
+    "no-useless-assignment": {
+      "count": 1
+    }
+  },
+  "src/core/nearby/discovery.ts": {
+    "no-duplicate-imports": {
+      "count": 1
+    }
+  },
+  "src/core/paths.ts": {
+    "no-useless-assignment": {
+      "count": 2
+    }
+  },
+  "src/core/pdf-text.ts": {
+    "preserve-caught-error": {
+      "count": 2
+    }
+  },
+  "src/core/platform.ts": {
+    "no-useless-assignment": {
+      "count": 1
+    }
+  },
+  "src/core/plugins/index.ts": {
+    "@typescript-eslint/no-non-null-assertion": {
+      "count": 3
+    },
+    "no-useless-assignment": {
+      "count": 2
+    }
+  },
+  "src/core/runtime/gateway-log-file.ts": {
+    "no-control-regex": {
+      "count": 1
+    }
+  },
+  "src/core/runtime/open-url.ts": {
+    "no-control-regex": {
+      "count": 1
+    }
+  },
+  "src/core/scheduler.ts": {
+    "preserve-caught-error": {
+      "count": 1
+    }
+  },
+  "src/core/skills/calc.ts": {
+    "@typescript-eslint/no-non-null-assertion": {
+      "count": 3
+    },
+    "preserve-caught-error": {
+      "count": 1
+    }
+  },
+  "src/core/skills/registry.ts": {
+    "@typescript-eslint/no-non-null-assertion": {
+      "count": 1
+    }
+  },
+  "src/core/source-migration.ts": {
+    "@typescript-eslint/no-non-null-assertion": {
+      "count": 2
+    }
+  },
+  "src/core/system-backup.ts": {
+    "preserve-caught-error": {
+      "count": 1
+    }
+  },
+  "src/core/tool-output-recovery.ts": {
+    "no-control-regex": {
+      "count": 1
+    }
+  },
+  "src/core/tools/handlers/browser.ts": {
+    "no-useless-assignment": {
+      "count": 2
+    },
+    "preserve-caught-error": {
+      "count": 2
+    }
+  },
+  "src/core/tools/handlers/calc.ts": {
+    "no-useless-escape": {
+      "count": 1
+    },
+    "preserve-caught-error": {
+      "count": 1
+    }
+  },
+  "src/core/tools/handlers/channel.ts": {
+    "no-duplicate-imports": {
+      "count": 2
+    }
+  },
+  "src/core/tools/handlers/data.ts": {
+    "preserve-caught-error": {
+      "count": 1
+    }
+  },
+  "src/core/tools/handlers/execute-code.ts": {
+    "prefer-const": {
+      "count": 2
+    }
+  },
+  "src/core/tools/handlers/http.ts": {
+    "preserve-caught-error": {
+      "count": 1
+    }
+  },
+  "src/core/tools/handlers/lsp.ts": {
+    "no-useless-assignment": {
+      "count": 1
+    }
+  },
+  "src/core/tools/handlers/security-scan.ts": {
+    "no-control-regex": {
+      "count": 2
+    }
+  },
+  "src/core/tools/handlers/telegram-media.ts": {
+    "no-useless-assignment": {
+      "count": 1
+    }
+  },
+  "src/core/tools/handlers/transcribe.ts": {
+    "@typescript-eslint/no-non-null-assertion": {
+      "count": 2
+    }
+  },
+  "src/core/tools/handlers/wallet.ts": {
+    "preserve-caught-error": {
+      "count": 1
+    }
+  },
+  "src/core/tools/handlers/web-research-providers.ts": {
+    "no-useless-escape": {
+      "count": 1
+    },
+    "preserve-caught-error": {
+      "count": 1
+    }
+  },
+  "src/core/tools/handlers/web-search.ts": {
+    "@typescript-eslint/no-non-null-assertion": {
+      "count": 4
+    }
+  },
+  "src/core/tools/path-policy.ts": {
+    "@typescript-eslint/no-non-null-assertion": {
+      "count": 2
+    }
+  },
+  "src/core/wallet-base.ts": {
+    "no-useless-assignment": {
+      "count": 2
+    }
+  },
+  "tests/api/channel-security-routes-mocked.test.ts": {
+    "@typescript-eslint/no-non-null-assertion": {
+      "count": 2
+    }
+  },
+  "tests/api/chat-instruction-state.test.ts": {
+    "@typescript-eslint/no-non-null-assertion": {
+      "count": 2
+    }
+  },
+  "tests/api/chat-session-detail-context-usage.test.ts": {
+    "@typescript-eslint/no-non-null-assertion": {
+      "count": 2
+    }
+  },
+  "tests/api/chat-session-serialization.test.ts": {
+    "@typescript-eslint/no-non-null-assertion": {
+      "count": 4
+    }
+  },
+  "tests/api/chat-steering-activities.test.ts": {
+    "@typescript-eslint/no-non-null-assertion": {
+      "count": 1
+    }
+  },
+  "tests/api/chat-token-optimization.test.ts": {
+    "@typescript-eslint/no-non-null-assertion": {
+      "count": 3
+    }
+  },
+  "tests/api/memory-path-fuzz.test.ts": {
+    "@typescript-eslint/no-non-null-assertion": {
+      "count": 1
+    }
+  },
+  "tests/api/queries.test.ts": {
+    "@typescript-eslint/no-non-null-assertion": {
+      "count": 2
+    }
+  },
+  "tests/api/session-tool-call-detail.test.ts": {
+    "@typescript-eslint/no-non-null-assertion": {
+      "count": 1
+    }
+  },
+  "tests/api/session-transcript.test.ts": {
+    "@typescript-eslint/no-non-null-assertion": {
+      "count": 3
+    }
+  },
+  "tests/channels/security.test.ts": {
+    "@typescript-eslint/no-non-null-assertion": {
+      "count": 1
+    }
+  },
+  "tests/cli/tui-session-commands.test.ts": {
+    "@typescript-eslint/no-non-null-assertion": {
+      "count": 1
+    }
+  },
+  "tests/core/acp.test.ts": {
+    "no-duplicate-imports": {
+      "count": 1
+    }
+  },
+  "tests/core/agentic-loop-cap.test.ts": {
+    "@typescript-eslint/no-non-null-assertion": {
+      "count": 6
+    }
+  },
+  "tests/core/bootstrap-files.test.ts": {
+    "@typescript-eslint/no-non-null-assertion": {
+      "count": 6
+    },
+    "no-irregular-whitespace": {
+      "count": 2
+    }
+  },
+  "tests/core/channel-chat-runtime.test.ts": {
+    "@typescript-eslint/no-non-null-assertion": {
+      "count": 3
+    }
+  },
+  "tests/core/channel-commands.test.ts": {
+    "@typescript-eslint/no-non-null-assertion": {
+      "count": 5
+    }
+  },
+  "tests/core/channel-formatting.test.ts": {
+    "@typescript-eslint/no-non-null-assertion": {
+      "count": 3
+    }
+  },
+  "tests/core/channel-parsers.test.ts": {
+    "@typescript-eslint/no-non-null-assertion": {
+      "count": 3
+    }
+  },
+  "tests/core/channel-security-config-fuzz.test.ts": {
+    "@typescript-eslint/no-non-null-assertion": {
+      "count": 2
+    }
+  },
+  "tests/core/chat-attachments.test.ts": {
+    "@typescript-eslint/no-non-null-assertion": {
+      "count": 1
+    }
+  },
+  "tests/core/checkpoint.test.ts": {
+    "@typescript-eslint/no-non-null-assertion": {
+      "count": 2
+    }
+  },
+  "tests/core/checkpoints-unit.test.ts": {
+    "@typescript-eslint/no-non-null-assertion": {
+      "count": 18
+    }
+  },
+  "tests/core/credential-pool.test.ts": {
+    "@typescript-eslint/no-non-null-assertion": {
+      "count": 10
+    }
+  },
+  "tests/core/evidence-reducer.test.ts": {
+    "no-duplicate-imports": {
+      "count": 1
+    }
+  },
+  "tests/core/file-read-batch.test.ts": {
+    "no-useless-escape": {
+      "count": 2
+    }
+  },
+  "tests/core/file-write-verification.test.ts": {
+    "no-useless-escape": {
+      "count": 1
+    }
+  },
+  "tests/core/hashline-edits.test.ts": {
+    "no-regex-spaces": {
+      "count": 1
+    }
+  },
+  "tests/core/llm-stream-watchdog.test.ts": {
+    "@typescript-eslint/no-non-null-assertion": {
+      "count": 5
+    }
+  },
+  "tests/core/mcp-client.test.ts": {
+    "@typescript-eslint/no-non-null-assertion": {
+      "count": 3
+    }
+  },
+  "tests/core/media-providers-unit.test.ts": {
+    "@typescript-eslint/no-non-null-assertion": {
+      "count": 1
+    }
+  },
+  "tests/core/memory-get-confinement.test.ts": {
+    "@typescript-eslint/no-non-null-assertion": {
+      "count": 1
+    }
+  },
+  "tests/core/mobile-scopes.test.ts": {
+    "@typescript-eslint/no-non-null-assertion": {
+      "count": 1
+    }
+  },
+  "tests/core/models-dev.test.ts": {
+    "@typescript-eslint/no-non-null-assertion": {
+      "count": 1
+    }
+  },
+  "tests/core/pairing-fuzz.test.ts": {
+    "@typescript-eslint/no-non-null-assertion": {
+      "count": 4
+    }
+  },
+  "tests/core/replay-guard.test.ts": {
+    "prefer-const": {
+      "count": 4
+    }
+  },
+  "tests/core/router.test.ts": {
+    "@typescript-eslint/no-non-null-assertion": {
+      "count": 9
+    }
+  },
+  "tests/core/sandbox-runtime.test.ts": {
+    "no-useless-escape": {
+      "count": 4
+    }
+  },
+  "tests/core/session-context-state.test.ts": {
+    "@typescript-eslint/no-non-null-assertion": {
+      "count": 6
+    }
+  },
+  "tests/core/session-goal-loop.test.ts": {
+    "@typescript-eslint/no-non-null-assertion": {
+      "count": 2
+    }
+  },
+  "tests/core/session-plan-lifecycle.test.ts": {
+    "no-duplicate-imports": {
+      "count": 1
+    }
+  },
+  "tests/core/skill-slug-fuzz.test.ts": {
+    "no-irregular-whitespace": {
+      "count": 1
+    }
+  },
+  "tests/core/skills-resolution.test.ts": {
+    "@typescript-eslint/no-non-null-assertion": {
+      "count": 6
+    }
+  },
+  "tests/core/subagent-tool-budget.test.ts": {
+    "no-duplicate-imports": {
+      "count": 1
+    }
+  },
+  "tests/core/system-monitor.test.ts": {
+    "@typescript-eslint/no-non-null-assertion": {
+      "count": 2
+    }
+  },
+  "tests/core/tool-approval.test.ts": {
+    "@typescript-eslint/no-non-null-assertion": {
+      "count": 7
+    }
+  },
+  "tests/core/tool-call-argument-repair.test.ts": {
+    "@typescript-eslint/no-non-null-assertion": {
+      "count": 5
+    }
+  },
+  "tests/core/tool-output-recovery.test.ts": {
+    "@typescript-eslint/no-non-null-assertion": {
+      "count": 12
+    }
+  },
+  "tests/e2e/ide-web-ui-browser-smoke.test.ts": {
+    "@typescript-eslint/no-non-null-assertion": {
+      "count": 1
+    },
+    "prefer-const": {
+      "count": 1
+    }
+  },
+  "tests/e2e/mobile-device-lifecycle.test.ts": {
+    "@typescript-eslint/no-non-null-assertion": {
+      "count": 4
+    }
+  },
+  "tests/e2e/persistence-and-sse-smoke.test.ts": {
+    "no-useless-assignment": {
+      "count": 2
+    }
+  },
+  "tests/e2e/rate-limit-e2e.test.ts": {
+    "@typescript-eslint/no-non-null-assertion": {
+      "count": 2
+    }
+  },
+  "tests/e2e/self-improving-toggle-e2e.test.ts": {
+    "no-useless-assignment": {
+      "count": 1
+    }
+  },
+  "tests/e2e/terminal-smoke.test.ts": {
+    "@typescript-eslint/no-non-null-assertion": {
+      "count": 2
+    }
+  },
+  "tests/runtime/app-release-surfaces.test.ts": {
+    "no-useless-escape": {
+      "count": 3
+    }
+  },
+  "tests/runtime/codeviewer-hook-order.test.ts": {
+    "no-regex-spaces": {
+      "count": 1
+    }
+  },
+  "tests/ui/chat-live-activity-persistence.test.ts": {
+    "no-duplicate-imports": {
+      "count": 1
+    }
+  },
+  "tests/ui/page-api-wiring.test.ts": {
+    "no-regex-spaces": {
+      "count": 1
+    }
+  }
+}

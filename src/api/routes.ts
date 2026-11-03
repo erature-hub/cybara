@@ -43,7 +43,7 @@ import { sessionGoalRoutes } from "./session-goal-routes";
 import { forkSession } from "../core/agent-eval";
 import { cancelAgentLoopRun, getAgentLoopRun, listAgentLoopRuns } from "../core/agent-loop";
 import { deleteArtifact, listAllArtifacts, listArtifacts, readArtifact } from "../core/artifacts";
-import { getAppVersion, getBuildProvenance, getReleaseRepositoryUrl } from "../core/build-info";
+import { RELEASE_BUILD_INFO } from "../core/build-info";
 import { channelManager } from "../core/channels";
 import { listChatCapabilities, listChatCommands } from "../core/chat/capability-mentions";
 import { isBotSessionId } from "../../shared/bot-mode";
@@ -303,8 +303,8 @@ const routes: Record<string, RouteHandler> = {
   }),
   "GET /api/info": () => ({
     name: "Cybara",
-    version: getAppVersion(),
-    releaseRepositoryUrl: getReleaseRepositoryUrl(),
+    version: RELEASE_BUILD_INFO.version(),
+    releaseRepositoryUrl: RELEASE_BUILD_INFO.repositoryUrl(),
     setupComplete: config.isSetupComplete(),
     homeDir: runtimeHomeDir,
     ...getCybaraDataDirInfo(),
@@ -318,9 +318,10 @@ const routes: Record<string, RouteHandler> = {
   }),
 
   "GET /api/build-info": async () => ({
-    version: getAppVersion(),
-    release_repository_url: getReleaseRepositoryUrl(),
-    ...(await getBuildProvenance()),
+    version: RELEASE_BUILD_INFO.version(),
+    release_channel: RELEASE_BUILD_INFO.channel,
+    release_repository_url: RELEASE_BUILD_INFO.repositoryUrl(),
+    ...(await RELEASE_BUILD_INFO.provenance()),
   }),
 
   "GET /api/update-check": async () => {
@@ -328,7 +329,7 @@ const routes: Record<string, RouteHandler> = {
       return {
         updateAvailable: false,
         latestVersion: null,
-        currentVersion: getAppVersion(),
+        currentVersion: RELEASE_BUILD_INFO.version(),
         releaseUrl: null,
         checkedAt: Date.now(),
         cached: true,

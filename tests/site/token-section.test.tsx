@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { CYB_TOKEN, DISCORD_URL } from "../../site/src/content";
+import { CYB_TOKEN, UPSTREAM_DISCORD_URL } from "../../site/src/content";
 
 describe("site token section", () => {
   test("uses the verified CYB contract and official market link", () => {
@@ -19,11 +19,11 @@ describe("site token section", () => {
   });
 
   test("links the official Discord from the footer with a Discord icon", async () => {
-    expect(DISCORD_URL).toBe("https://discord.gg/zqz3nZj2pJ");
+    expect(UPSTREAM_DISCORD_URL).toBe("https://discord.gg/zqz3nZj2pJ");
     const footerSource = await Bun.file(
       new URL("../../site/src/components/Footer.tsx", import.meta.url)
     ).text();
-    expect(footerSource).toContain('href={DISCORD_URL}');
+    expect(footerSource).toContain('href={UPSTREAM_DISCORD_URL}');
     expect(footerSource).toContain('name="discord"');
   });
 

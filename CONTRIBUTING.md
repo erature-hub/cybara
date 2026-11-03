@@ -25,8 +25,8 @@ mentions npm-style commands, translate them to Bun before running:
 ```bash
 git clone https://github.com/erature-hub/cybara.git
 cd cybara
-git switch dev
-git pull --ff-only origin dev
+git switch main
+git pull --ff-only origin main
 bun install            # installs server + CLI dependencies
 cd ui && bun install   # installs web UI dependencies
 ```
@@ -73,22 +73,23 @@ new protocol code. New API protocols require matching branches in the agent loop
 
 ## Development workflow
 
-`dev` is the integration branch for ongoing development. Create contribution
-branches from the latest `dev` branch and open pull requests against `dev`:
+This fork publishes from a single branch. `main` is the integration branch for
+ongoing development, so create contribution branches from the latest `main` and
+open pull requests against `main`:
 
 ```bash
-git switch dev
-git pull --ff-only origin dev
+git switch main
+git pull --ff-only origin main
 git switch -c <type>/<short-description>
 ```
 
-Keep an existing contribution branch current with `origin/dev` before requesting
-review. The `main` branch is reserved for tested release merges from `dev` and
-maintainer-directed hotfixes.
+Keep an existing contribution branch current with `origin/main` before
+requesting review. Releases are cut from `main` by the release workflow, and
+maintainer-directed hotfixes land directly on `main`.
 
 ## Pull requests
 
-- Branch off `dev` and target `dev`. Keep pull requests focused.
+- Branch off `main` and target `main`. Keep pull requests focused.
 - Ensure `bun run check:ci` is green before requesting review.
 - Don't commit `release/` artifacts, build output, or signing keys.
 - Don't bump the version yourself. The `main-version-tag.yml` workflow derives
@@ -98,8 +99,8 @@ maintainer-directed hotfixes.
 
 Releases are **fully automated** from git tags:
 
-1. A tested release merge from `dev` to `main` triggers
-   `main-version-tag.yml`, which syncs the version across
+1. A tested release merge to `main` triggers `main-version-tag.yml`, which
+   syncs the version across
    `package.json`, `ui/package.json`, `src-tauri/Cargo.toml`, and
    `src-tauri/tauri.conf.json`, then tags `v<version>`.
 2. The `v*` tag triggers `release.yml`, which runs the quality gate and produces

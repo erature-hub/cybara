@@ -6,7 +6,7 @@ import {
   auditWorkspace,
   chunkPackages,
   hasVerifiedDeepmergeProtoPatch,
-  hasVerifiedSignatureParserPatch,
+  hasVerifiedSignatureParserFix,
   isAdvisoryOutage,
   isTransportKill,
   parseLockfilePackages,
@@ -169,31 +169,39 @@ describe("chunkPackages", () => {
   });
 });
 
-test("signature-parser audit exception requires installed source and exact registered patch", () => {
+test("signature-parser audit exception requires the upstream-patched version and installed source", () => {
   const root = mkdtempSync(join(tmpdir(), "cybara-signature-audit-"));
   try {
-    expect(hasVerifiedSignatureParserPatch(root)).toBe(false);
+    expect(hasVerifiedSignatureParserFix(root)).toBe(false);
     writeFileSync(
       join(root, "package.json"),
-      JSON.stringify({
-        patchedDependencies: { "node-forge@1.4.0": "patches/node-forge@1.4.0.patch" },
-      })
+      JSON.stringify({ overrides: { "node-forge": "1.4.0" } })
     );
-    expect(hasVerifiedSignatureParserPatch(root)).toBe(false);
+    expect(hasVerifiedSignatureParserFix(root)).toBe(false);
     mkdirSync(join(root, "node_modules/node-forge/lib"), { recursive: true });
     const source = join(root, "node_modules/node-forge/lib/rsa.js");
     writeFileSync(source, "obj.value.length !== 2");
-    expect(hasVerifiedSignatureParserPatch(root)).toBe(false);
+    expect(hasVerifiedSignatureParserFix(root)).toBe(false);
     writeFileSync(
       source,
-      "obj.value.length !== 2 || obj.value[0].value.length !== (('parameters' in capture) ? 2 : 1)"
+      [
+        "obj.value.length !== 2)",
+        "var withParameters = _encodeDigestInfo(oid, capture.digest, true);",
+        "var withoutParameters =",
+        "d.substring(0, withParameters.length) !== withParameters",
+      ].join("\n")
     );
-    expect(hasVerifiedSignatureParserPatch(root)).toBe(true);
+    expect(hasVerifiedSignatureParserFix(root)).toBe(false);
     writeFileSync(
       join(root, "package.json"),
-      JSON.stringify({ patchedDependencies: { "node-forge@1.4.0": "wrong.patch" } })
+      JSON.stringify({ overrides: { "node-forge": "1.4.1" } })
     );
-    expect(hasVerifiedSignatureParserPatch(root)).toBe(false);
+    expect(hasVerifiedSignatureParserFix(root)).toBe(true);
+    writeFileSync(
+      join(root, "package.json"),
+      JSON.stringify({ overrides: { "node-forge": "1.4.0" } })
+    );
+    expect(hasVerifiedSignatureParserFix(root)).toBe(false);
   } finally {
     rmSync(root, { recursive: true, force: true });
   }
@@ -244,8 +252,11 @@ test("verified mobile patch exceptions reach the actual audit runner", async () 
     }
   );
   expect(result.status).toBe("ok");
-  expect(received.has("GHSA-86w9-cpqp-85rv")).toBe(true);
+  // The deepmerge advisory still has no upstream fix and stays allowlisted.
   expect(received.has("GHSA-gcqx-w48m-w2h4")).toBe(true);
+  // node-forge was upgraded to the upstream-patched release, so its advisory
+  // must no longer be suppressed.
+  expect(received.has("GHSA-86w9-cpqp-85rv")).toBe(false);
   const root = await auditWorkspace(
     { label: "root", lockfile: "bun.lock", cwd: process.cwd(), ignored: new Set() },
     (workspace) => {

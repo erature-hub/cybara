@@ -36,9 +36,24 @@ function extractRepositorySlug(url: string): string {
 const packageVersion = typeof packageJson.version === "string" ? packageJson.version : "unknown";
 const packageRepositoryUrl = normalizeRepositoryUrl(packageJson.repository);
 
+// This repository and upstream independently increment the same version
+// sequence, so a bare number is ambiguous across the two channels. The fork
+// appends an explicit channel marker to the reported version so a running
+// binary always identifies which release channel it came from.
+export const FORK_VERSION_CHANNEL = "fork";
+
 export function getAppVersion(): string {
   const override = process.env.CYBARA_VERSION?.trim();
-  return override || packageVersion || "unknown";
+  const raw = override || packageVersion || "unknown";
+  return applyReleaseChannel(raw);
+}
+
+export function applyReleaseChannel(version: string): string {
+  const trimmed = version.trim();
+  if (!trimmed) return "unknown";
+  if (!/^\d+\.\d+\.\d+$/.test(trimmed)) return trimmed;
+  if (trimmed.includes(FORK_VERSION_CHANNEL)) return trimmed;
+  return `${trimmed}+${FORK_VERSION_CHANNEL}.1`;
 }
 
 export function getReleaseRepository(): string {
@@ -49,6 +64,13 @@ export function getReleaseRepository(): string {
 export function getReleaseRepositoryUrl(): string {
   return `https://github.com/${getReleaseRepository()}`;
 }
+
+export const RELEASE_BUILD_INFO = {
+  channel: FORK_VERSION_CHANNEL,
+  version: getAppVersion,
+  repositoryUrl: getReleaseRepositoryUrl,
+  provenance: getBuildProvenance,
+};
 
 async function readTextFile(filePath: string): Promise<string | null> {
   const file = Bun.file(filePath);
