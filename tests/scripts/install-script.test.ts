@@ -88,10 +88,19 @@ describe("install.sh production wiring", () => {
     }
   });
 
-  test("root forwarder pipes to the hosted installer", () => {
+  test("root forwarder pipes to the fork installer", () => {
     const source = readFileSync(join(ROOT_DIR, "install.sh"), "utf8");
-    expect(source).toContain("https://cybara.ai/install.sh");
+    expect(source).toContain(
+      "https://raw.githubusercontent.com/erature-hub/cybara/main/site/public/install.sh"
+    );
     expect(source).toContain('"$@"');
+    expect(source).not.toContain("https://cybara.ai/install.sh");
+  });
+
+  test("the installer resolves releases from the fork channel", () => {
+    const source = readFileSync(join(ROOT_DIR, "site", "public", "install.sh"), "utf8");
+    expect(source).toContain('CYBARA_RELEASE_REPOSITORY:-erature-hub/cybara');
+    expect(source).not.toContain("metaspartan/cybara");
   });
 });
 
@@ -116,8 +125,17 @@ describe("install.ps1 production wiring", () => {
     expect(source).not.toContain("installing unverified");
   });
 
-  test("root forwarder pipes to the hosted installer", () => {
+  test("root forwarder pipes to the fork installer", () => {
     const source = readFileSync(join(ROOT_DIR, "install.ps1"), "utf8");
-    expect(source).toContain("https://cybara.ai/install.ps1");
+    expect(source).toContain(
+      "https://raw.githubusercontent.com/erature-hub/cybara/main/site/public/install.ps1"
+    );
+    expect(source).not.toContain("https://cybara.ai/install.ps1");
+  });
+
+  test("the Windows installer resolves releases from the fork channel", () => {
+    const source = readFileSync(join(ROOT_DIR, "site", "public", "install.ps1"), "utf8");
+    expect(source).toContain("erature-hub/cybara");
+    expect(source).not.toContain("metaspartan/cybara");
   });
 });

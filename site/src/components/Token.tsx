@@ -26,7 +26,7 @@ export function Token(): React.ReactElement {
       <SectionHeading
         eyebrow="Community token"
         title="Meet $CYB"
-        description="Cybara's community meme token on Solana, with one clear place to verify the contract and find the official market page."
+        description="The upstream Cybara community meme token on Solana, with one clear place to verify the contract and find the official market page."
       />
       <div className="glass token-card">
         <div className="token-story">
@@ -43,6 +43,10 @@ export function Token(): React.ReactElement {
             Use the official contract shown here and verify the address before interacting with
             the token anywhere else. Trading fees support the continued development of the Cybara
             project.
+          </p>
+          <p className="token-description">
+            $CYB is issued and controlled by the upstream Cybara project. This release channel
+            neither issues nor controls it, and it does not fund this fork's maintenance.
           </p>
         </div>
         <div className="token-details">

@@ -1,5 +1,11 @@
 import { Icon } from "./Icon";
-import { CREATOR_X_URL, DISCORD_URL, GITHUB_URL, NAV_LINKS, X_URL } from "../content";
+import {
+  CREATOR_X_URL,
+  GITHUB_URL,
+  NAV_LINKS,
+  UPSTREAM_DISCORD_URL,
+  UPSTREAM_X_URL,
+} from "../content";
 import { useSiteI18n } from "../i18n";
 import { A } from "../lib/router";
 
@@ -37,19 +43,19 @@ export function Footer(): React.ReactElement {
         <div className="footer-social">
           <a
             className="footer-social-link"
-            href={DISCORD_URL}
+            href={UPSTREAM_DISCORD_URL}
             target="_blank"
             rel="noreferrer"
-            aria-label="Join the Cybara Discord"
+            aria-label="Join the upstream Cybara Discord"
           >
             <Icon name="discord" className="footer-social-icon" />
           </a>
           <a
             className="footer-social-link"
-            href={X_URL}
+            href={UPSTREAM_X_URL}
             target="_blank"
             rel="noreferrer"
-            aria-label="Cybara on X"
+            aria-label="Cybara on X (upstream)"
           >
             <Icon name="x" className="footer-social-icon" />
           </a>

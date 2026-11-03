@@ -1,2 +1,2 @@
 $ErrorActionPreference = "Stop"
-Invoke-RestMethod -Uri "https://cybara.ai/install.ps1" | Invoke-Expression
+Invoke-RestMethod -Uri "https://raw.githubusercontent.com/erature-hub/cybara/main/site/public/install.ps1" | Invoke-Expression

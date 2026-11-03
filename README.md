@@ -79,14 +79,18 @@ is published here, under
 Install the latest Cybara CLI on macOS or Linux:
 
 ```bash
-curl -fsSL https://cybara.ai/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/erature-hub/cybara/main/site/public/install.sh | bash
 ```
 
 On Windows PowerShell:
 
 ```powershell
-powershell -c "irm https://cybara.ai/install.ps1 | iex"
+powershell -c "irm https://raw.githubusercontent.com/erature-hub/cybara/main/site/public/install.ps1 | iex"
 ```
+
+These installers resolve releases from **this repository** (`erature-hub/cybara`) and verify
+the published SHA256 checksum before installing. Override the channel with
+`CYBARA_RELEASE_REPOSITORY` if you want a different release source.
 
 Then launch Cybara:
 
@@ -516,22 +520,27 @@ tests/                  # Bun test suites (unit/integration/e2e)
 If Cybara saves you time, consider supporting its development:
 
 <p align="center">
-  <a href="https://github.com/sponsors/metaspartan"><img src="https://img.shields.io/badge/Sponsor-on_GitHub-ea4aaa?logo=githubsponsors&logoColor=white" alt="Sponsor on GitHub" /></a>
-  <a href="https://www.buymeacoffee.com/carsenk"><img src="https://img.shields.io/badge/Buy_Me_a_Coffee-metaspartan-ffdd00?logo=buymeacoffee&logoColor=black" alt="Buy Me a Coffee" /></a>
+  <a href="https://github.com/sponsors/erature-hub"><img src="https://img.shields.io/badge/Sponsor_on_GitHub-erature--hub-ea4aaa?logo=githubsponsors&logoColor=white" alt="Sponsor this fork on GitHub" /></a>
 </p>
 
 ---
 
 ## Community
 
+- This fork: [GitHub Issues](https://github.com/erature-hub/cybara/issues) and
+  [Discussions](https://github.com/erature-hub/cybara/discussions)
 - Website: [cybara.ai](https://cybara.ai)
-- Discord: [Join the Cybara community](https://discord.gg/zqz3nZj2pJ)
-- X: [@cybaraAI](https://x.com/cybaraAI)
+- Upstream Discord: [Join the Cybara community](https://discord.gg/zqz3nZj2pJ)
+- Upstream X: [@cybaraAI](https://x.com/cybaraAI)
 - Creator: [Carsen Klock](https://x.com/carsenklock)
+
+Community chat, social accounts, and the website are operated by upstream. This fork does not
+moderate them; report fork-specific problems in this repository's issue tracker.
 
 ### $CYB Community Meme Token
 
-$CYB is Cybara's community meme token on Solana.
+$CYB is the **upstream** Cybara community meme token on Solana. This fork neither issues nor
+controls it, and it does not fund this fork's maintenance.
 
 - Contract address: `J2hyZSVokSTuy3bG85A5xfs3umCeGtqZZEdKtGTTpump`
 - Official market page: [View $CYB on Pump](https://pump.fun/coin/J2hyZSVokSTuy3bG85A5xfs3umCeGtqZZEdKtGTTpump)
@@ -544,8 +553,8 @@ claim on Cybara software or revenue.
 
 ## Contributing
 
-Create contribution branches from `dev` and open pull requests against `dev`.
-The `main` branch is reserved for releases. See
+Create contribution branches from `main` and open pull requests against `main`.
+Releases are cut from `main` by the release workflow. See
 [CONTRIBUTING.md](CONTRIBUTING.md) for setup, validation, and review requirements.
 
 ## License

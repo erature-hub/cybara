@@ -41,8 +41,10 @@ export const NAV_LINKS: readonly NavLink[] = [
 ];
 
 export const GITHUB_URL = "https://github.com/erature-hub/cybara";
-export const X_URL = "https://x.com/cybaraAI";
-export const DISCORD_URL = "https://discord.gg/zqz3nZj2pJ";
+// Upstream owns the public community channels. The fork tracks issues and
+// discussions in this repository instead of redirecting them elsewhere.
+export const UPSTREAM_X_URL = "https://x.com/cybaraAI";
+export const UPSTREAM_DISCORD_URL = "https://discord.gg/zqz3nZj2pJ";
 export const CREATOR_X_URL = "https://x.com/carsenklock";
 export const RELEASES_URL = "https://github.com/erature-hub/cybara/releases/latest";
 // Desktop installers, mobile builds, and the browser extension are published by
@@ -57,9 +59,9 @@ export const CYB_TOKEN = {
 export const PLAY_STORE_URL =
   "https://play.google.com/store/apps/details?id=com.ck.cybara&hl=en_US";
 export const INSTALL_COMMAND =
-  "curl -fsSL https://cybara.ai/install.sh | bash";
+  "curl -fsSL https://raw.githubusercontent.com/erature-hub/cybara/main/site/public/install.sh | bash";
 export const INSTALL_COMMAND_WINDOWS =
-  'powershell -c "irm https://cybara.ai/install.ps1 | iex"';
+  'powershell -c "irm https://raw.githubusercontent.com/erature-hub/cybara/main/site/public/install.ps1 | iex"';
 export const INSTALL_COMMAND_NPM = "npx cybara";
 export const INSTALL_COMMAND_BUN = "bunx cybara";
 

@@ -1,2 +1,7 @@
-github: metaspartan
-buy_me_a_coffee: carsenk
+# Funding for the Erature-maintained Cybara fork.
+#
+# Upstream funding stays with the upstream author. This fork routes sponsorship
+# to Erature, which maintains the fork's release channel, security fixes, and
+# divergence policy.
+github: erature-hub
+custom: ["https://erature.ai"]

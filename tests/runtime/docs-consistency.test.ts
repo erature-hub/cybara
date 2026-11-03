@@ -121,16 +121,17 @@ describe("documentation consistency", () => {
     expect(docs).toContain(".github/workflows/release.yml");
   });
 
-  test("contributions target dev while main remains the release branch", () => {
+  test("contributions target main, which is also the release branch", () => {
     const contributing = read("CONTRIBUTING.md");
     const readme = read("README.md");
 
-    expect(contributing).toContain("git switch dev");
-    expect(contributing).toContain("Branch off `dev` and target `dev`");
-    expect(contributing).toContain("release merge from `dev` to `main`");
-    expect(contributing).not.toContain("Branch off `main`");
-    expect(readme).toContain("open pull requests against `dev`");
-    expect(readme).toContain("`main` branch is reserved for releases");
+    expect(contributing).toContain("git switch main");
+    expect(contributing).toContain("Branch off `main` and target `main`");
+    expect(contributing).toContain("release merge to `main`");
+    expect(contributing).not.toContain("git switch dev");
+    expect(contributing).not.toContain("Branch off `dev`");
+    expect(readme).toContain("open pull requests against `main`");
+    expect(readme).toContain("Releases are cut from `main`");
   });
 
   test("changed documentation keeps internal markdown links resolvable", () => {
