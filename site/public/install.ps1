@@ -76,6 +76,37 @@ if ($checksumAsset) {
 
 $target = Join-Path $InstallDir "cybara.exe"
 Move-Item -Force $tmpFile $target
+# Stage the bundled skills and plugins beside the installed binary. The
+# standalone CLI resolves both from the install directory, so a fresh install
+# otherwise starts with no bundled skills and no bundled plugins.
+function Install-Bundles {
+    $sourceUrl = "https://codeload.github.com/$Repo/tar.gz/refs/tags/v$($Version.TrimStart('v'))"
+    $tempRoot = Join-Path ([IO.Path]::GetTempPath()) ("cybara-bundles-" + [IO.Path]::GetRandomFileName())
+    New-Item -ItemType Directory -Force -Path $tempRoot | Out-Null
+    try {
+        $archive = Join-Path $tempRoot "source.tar.gz"
+        Invoke-WebRequest -Uri $sourceUrl -OutFile $archive -UseBasicParsing
+        & tar -xzf $archive -C $tempRoot
+        if ($LASTEXITCODE -ne 0) { throw "Could not extract the bundled skills and plugins." }
+        $treeRoot = Get-ChildItem -Path $tempRoot -Directory | Select-Object -First 1
+        if (-not $treeRoot) { throw "The bundled skills and plugins archive had no root directory." }
+        foreach ($bundle in @("skills", "plugins")) {
+            $source = Join-Path $treeRoot.FullName $bundle
+            if (-not (Test-Path $source)) { continue }
+            $target = Join-Path $InstallDir $bundle
+            New-Item -ItemType Directory -Force -Path $target | Out-Null
+            Copy-Item -Path (Join-Path $source "*") -Destination $target -Recurse -Force
+            Write-Host "Staged bundled $bundle in $InstallDir."
+        }
+    } catch {
+        Write-Warning "Could not stage the bundled skills and plugins; the CLI is installed without them."
+    } finally {
+        Remove-Item -Recurse -Force $tempRoot -ErrorAction SilentlyContinue
+    }
+}
+
+Install-Bundles
+
 Write-Host "Installed cybara to $target"
 
 $userPath = [Environment]::GetEnvironmentVariable("Path", "User")

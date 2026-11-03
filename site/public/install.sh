@@ -145,6 +145,41 @@ chmod +x "$TMP_FILE"
 mv "$TMP_FILE" "$INSTALL_DIR/cybara"
 trap - EXIT
 
+# Stage the bundled skills and plugins beside the installed binary. The
+# standalone CLI resolves both from the install directory, so a fresh install
+# otherwise starts with no bundled skills and no bundled plugins.
+stage_bundles() {
+  if ! command -v tar >/dev/null 2>&1; then
+    echo "tar is required to stage the bundled skills and plugins; skipping." >&2
+    return 0
+  fi
+  local bundle_url="https://codeload.github.com/${REPO}/tar.gz/refs/tags/v${VERSION}"
+  local tmp_tree
+  tmp_tree="$(mktemp -d "${TMPDIR:-/tmp}/cybara-bundles.XXXXXX")"
+  if curl -fsSL "$bundle_url" -o "$tmp_tree/source.tar.gz" 2>/dev/null \
+    && tar -xzf "$tmp_tree/source.tar.gz" -C "$tmp_tree" 2>/dev/null; then
+    local tree_root
+    tree_root="$(find "$tmp_tree" -mindepth 1 -maxdepth 1 -type d | head -n 1)"
+    if [ -n "$tree_root" ]; then
+      for bundle in skills plugins; do
+        if [ -d "$tree_root/$bundle" ]; then
+          mkdir -p "$INSTALL_DIR/$bundle"
+          if cp -R "$tree_root/$bundle/." "$INSTALL_DIR/$bundle/" 2>/dev/null; then
+            echo "Staged bundled $bundle in $INSTALL_DIR."
+          else
+            echo "Could not stage the bundled $bundle; the CLI is installed without it." >&2
+          fi
+        fi
+      done
+    fi
+  else
+    echo "Could not download the bundled skills and plugins; the CLI is installed without them." >&2
+  fi
+  rm -rf "$tmp_tree"
+}
+
+stage_bundles
+
 echo "Cybara ${VERSION} installed to $INSTALL_DIR/cybara"
 
 case ":$PATH:" in
