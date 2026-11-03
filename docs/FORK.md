@@ -20,8 +20,10 @@ credential-free release channel** that anyone can install and audit:
 - Releases publish standalone CLI binaries for Linux, macOS, and Windows
   (x64 and arm64) with SHA256 sidecars.
 - The repository holds **zero** GitHub Actions secrets, **zero** Actions
-  variables, **zero** webhooks, and **zero** environments. The release workflow
-  uses only the built-in `GITHUB_TOKEN`.
+  variables, and **zero** webhooks. The release workflow uses only the built-in
+  `GITHUB_TOKEN`. The one environment in the repository is `github-pages`, which
+  GitHub provisions automatically for the marketing site and which holds no
+  secrets of its own.
 - Every published artifact is checksum-verified at install time, and the CI gate
   is reproducible without any private state.
 

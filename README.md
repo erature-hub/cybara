@@ -46,7 +46,7 @@ the original project by [Carsen Klock](https://github.com/metaspartan). It is ma
   (x64 and arm64) with SHA256 sidecars. Desktop, mobile, browser-extension, and npm publishing
   are not performed here; those artifacts remain upstream's.
 - **No release credentials.** The repository is configured with zero GitHub Actions secrets,
-  zero Actions variables, zero webhooks, and zero environments. The release workflow uses only
+  zero Actions variables, and zero webhooks. The release workflow uses only
   the built-in `GITHUB_TOKEN`.
 - **Upstream fixes carried forward.** Tool-call argument parsing repairs for elided
   tool-call arguments are included.

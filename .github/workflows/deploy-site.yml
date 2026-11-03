@@ -1,0 +1,68 @@
+name: Deploy Site
+
+# Publishes the marketing site to GitHub Pages.
+#
+# The site is a static Vite build with no server-side component, so the
+# published output is the contents of site/dist. No repository secret, Actions
+# variable, or registry credential is read; the deployment uses the automatic
+# GITHUB_TOKEN and the Pages deployment environment that GitHub provisions for
+# the site.
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "site/**"
+      - ".github/workflows/deploy-site.yml"
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# One deployment at a time. A newer push supersedes an in-flight run rather
+# than racing it, so the published site always matches the latest main.
+concurrency:
+  group: pages-deploy
+  cancel-in-progress: true
+
+env:
+  BUN_VERSION: "1.4.4"
+
+jobs:
+  build:
+    name: Build site
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2
+        with:
+          bun-version: ${{ env.BUN_VERSION }}
+      - name: Install site dependencies
+        run: cd site && bash ../scripts/ci-install.sh
+      - name: Build site
+        run: cd site && bun run build
+      - name: Configure Pages
+        uses: actions/configure-pages@983d7736d9b0ae728b81ab479565c72886d7745b # v5
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@56afc609e74202658d3ffba0e8f6dda462b719fa # v3
+        with:
+          path: site/dist
+
+  deploy:
+    name: Deploy to Pages
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@d6db90164ac5ed86f2b6aed7e0febac5b3c0c03e # v4
