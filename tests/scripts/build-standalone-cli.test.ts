@@ -81,7 +81,8 @@ describe("standalone CLI build", () => {
         buildCommit: "0123456789ABCDEF0123456789ABCDEF01234567",
       });
       expect(source).toContain('command === "--version"');
-      expect(source).toContain('"1.2.3"');
+      // The standalone binary reports its release channel, not the bare manifest version.
+      expect(source).toContain('"1.2.3+fork.1"');
       expect(source).toContain('if (serverCommand) await import("./.cybara-assets.ts")');
       expect(source).toContain('command === "agent" &&');
       expect(source).toContain('await import("./src/cli/agent-entry.ts")');

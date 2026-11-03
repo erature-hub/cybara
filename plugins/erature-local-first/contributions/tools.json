@@ -1,0 +1,40 @@
+[
+  {
+    "name": "local_provider_health",
+    "description": "Report whether the configured local inference runtimes are reachable and which models each one holds. Use this to confirm a local-only deployment before starting work.",
+    "command": [
+      "bun",
+      "run",
+      "./scripts/local-provider-health.ts"
+    ],
+    "timeoutMs": 30000,
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "runtimes": {
+          "type": "array",
+          "description": "Runtime endpoints to probe. Defaults to the standard local runtimes.",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "description": "Runtime identifier."
+              },
+              "url": {
+                "type": "string",
+                "description": "Base URL of the runtime."
+              }
+            },
+            "required": [
+              "id",
+              "url"
+            ],
+            "additionalProperties": false
+          }
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+]

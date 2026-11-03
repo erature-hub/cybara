@@ -1,0 +1,13 @@
+[
+  {
+    "events": [
+      "tool_before"
+    ],
+    "command": [
+      "bun",
+      "run",
+      "./scripts/offline-guard.ts"
+    ],
+    "timeoutMs": 10000
+  }
+]

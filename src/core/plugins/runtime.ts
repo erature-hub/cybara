@@ -8,7 +8,7 @@ import { readSubprocessStreamAsText } from "../subprocess-output";
 import { toolSchemas } from "../tools/registry";
 import { registerToolHandler, unregisterToolHandler } from "../tools/handlers/registry";
 import type { Tool, ToolContext } from "../tools/types";
-import { buildSubprocessEnvironment } from "../subprocess-env";
+import { buildHostSubprocessEnvironment } from "../subprocess-env";
 import type { InstalledCybaraPlugin } from "./types";
 import {
   registerPluginProviderContribution,
@@ -118,7 +118,7 @@ async function runPluginCommand(
       stdin: new Blob([JSON.stringify(redactSecrets(input))]),
       stdout: "pipe",
       stderr: "pipe",
-      env: buildSubprocessEnvironment({ CYBARA_PLUGIN_ID: plugin.manifest.id }),
+      env: buildHostSubprocessEnvironment({ CYBARA_PLUGIN_ID: plugin.manifest.id }),
     }
   );
   const stdoutPromise = readSubprocessStreamAsText(proc.stdout);

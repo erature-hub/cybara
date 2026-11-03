@@ -1,0 +1,7 @@
+[
+  {
+    "id": "local-first-check",
+    "description": "Verify this installation is genuinely local-first: list the reachable local runtimes, their models, and any hosted provider that is still configured.",
+    "prompt": "Run the local_provider_health tool to inventory the reachable local inference runtimes and their models. Then check GET /api/router/status and report whether any hosted provider is configured and available. Finish with a one-line verdict: LOCAL-ONLY or HYBRID, followed by the specific provider that would leak traffic if the answer is HYBRID."
+  }
+]

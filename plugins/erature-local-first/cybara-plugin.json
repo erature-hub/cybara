@@ -1,0 +1,36 @@
+{
+  "schemaVersion": 1,
+  "id": "erature-local-first",
+  "name": "Erature Local-First",
+  "version": "1.0.0",
+  "description": "Reference plugin for fully local agent operation: local inference auditing, a provider-health tool, an agent command, and a guard hook that blocks outbound network tools in offline mode.",
+  "author": "Erature",
+  "homepage": "https://github.com/erature-hub/cybara",
+  "contributions": {
+    "skills": {
+      "dirs": [
+        "skills"
+      ]
+    },
+    "tools": {
+      "files": [
+        "contributions/tools.json"
+      ]
+    },
+    "commands": {
+      "files": [
+        "contributions/commands.json"
+      ]
+    },
+    "hooks": {
+      "files": [
+        "contributions/hooks.json"
+      ]
+    },
+    "providers": {
+      "files": [
+        "contributions/providers.json"
+      ]
+    }
+  }
+}

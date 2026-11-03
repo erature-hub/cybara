@@ -1,7 +1,7 @@
 import { createHash, randomUUID } from "crypto";
 import { existsSync, readdirSync, readFileSync, rmSync } from "fs";
 import { basename, relative, resolve, sep } from "path";
-import { readGitCommit } from "../src/core/build-info";
+import { applyReleaseChannel, readGitCommit } from "../src/core/build-info";
 
 export interface StandaloneCliBuildOptions {
   target: string;
@@ -164,7 +164,8 @@ export function createStandaloneEntrySource(options: StandaloneEntrySourceOption
     options.cwd,
     resolve(options.cwd, options.assetsModule ?? ".cybara-standalone-assets.ts")
   );
-  const version = options.version?.trim() || "unknown";
+  const rawVersion = options.version?.trim() || "unknown";
+  const version = applyReleaseChannel(rawVersion);
   const buildCommit = options.buildCommit?.trim();
   const runtimeEntry = options.runtimeEntry
     ? `import embeddedRuntimeEntry from ${JSON.stringify(importPath(options.cwd, options.runtimeEntry))} with { type: "file" };\n`

@@ -1,0 +1,11 @@
+[
+  {
+    "id": "erature-local-ollama",
+    "name": "Erature Local Ollama",
+    "baseUrl": "http://localhost:11434/v1",
+    "api": "openai-compatible",
+    "authType": "none",
+    "allowPrivateEndpoint": true,
+    "models": []
+  }
+]
