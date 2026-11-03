@@ -192,9 +192,15 @@ test("signature-parser audit exception requires the upstream-patched version and
       ].join("\n")
     );
     expect(hasVerifiedSignatureParserFix(root)).toBe(false);
-    writeFileSync(join(root, "package.json"), JSON.stringify({ overrides: { "node-forge": "1.4.1" } }));
+    writeFileSync(
+      join(root, "package.json"),
+      JSON.stringify({ overrides: { "node-forge": "1.4.1" } })
+    );
     expect(hasVerifiedSignatureParserFix(root)).toBe(true);
-    writeFileSync(join(root, "package.json"), JSON.stringify({ overrides: { "node-forge": "1.4.0" } }));
+    writeFileSync(
+      join(root, "package.json"),
+      JSON.stringify({ overrides: { "node-forge": "1.4.0" } })
+    );
     expect(hasVerifiedSignatureParserFix(root)).toBe(false);
   } finally {
     rmSync(root, { recursive: true, force: true });

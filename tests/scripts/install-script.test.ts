@@ -99,7 +99,7 @@ describe("install.sh production wiring", () => {
 
   test("the installer resolves releases from the fork channel", () => {
     const source = readFileSync(join(ROOT_DIR, "site", "public", "install.sh"), "utf8");
-    expect(source).toContain('CYBARA_RELEASE_REPOSITORY:-erature-hub/cybara');
+    expect(source).toContain("CYBARA_RELEASE_REPOSITORY:-erature-hub/cybara");
     expect(source).not.toContain("metaspartan/cybara");
   });
 });

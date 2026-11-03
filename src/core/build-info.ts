@@ -65,6 +65,13 @@ export function getReleaseRepositoryUrl(): string {
   return `https://github.com/${getReleaseRepository()}`;
 }
 
+export const RELEASE_BUILD_INFO = {
+  channel: FORK_VERSION_CHANNEL,
+  version: getAppVersion,
+  repositoryUrl: getReleaseRepositoryUrl,
+  provenance: getBuildProvenance,
+};
+
 async function readTextFile(filePath: string): Promise<string | null> {
   const file = Bun.file(filePath);
   if (!(await file.exists())) return null;
