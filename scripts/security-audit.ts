@@ -83,21 +83,29 @@ const LOCKED_VERSION_PREFIXES = [
   "git+",
 ];
 
-export function hasVerifiedSignatureParserPatch(cwd: string): boolean {
+// node-forge 1.4.1 fixed GHSA-86w9-cpqp-85rv upstream by requiring a canonical
+// DER DigestInfo: the parsed structure is re-encoded with and without NULL
+// parameters and compared byte-for-byte against the signature bytes, so extra
+// nested DigestAlgorithm elements can no longer be smuggled past the
+// validator. That replaced the earlier in-tree patch, which is now obsolete.
+export const PATCHED_NODE_FORGE_VERSION = "1.4.1";
+
+export function hasVerifiedSignatureParserFix(cwd: string): boolean {
   try {
     const parsed: unknown = JSON.parse(readFileSync(join(cwd, "package.json"), "utf8"));
     if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) return false;
     const manifest = parsed as Record<string, unknown>;
-    const patched = manifest.patchedDependencies;
-    if (!patched || typeof patched !== "object" || Array.isArray(patched)) return false;
-    if (
-      (patched as Record<string, unknown>)["node-forge@1.4.0"] !== "patches/node-forge@1.4.0.patch"
-    )
+    const overrides = manifest.overrides;
+    if (!overrides || typeof overrides !== "object" || Array.isArray(overrides)) return false;
+    if ((overrides as Record<string, unknown>)["node-forge"] !== PATCHED_NODE_FORGE_VERSION) {
       return false;
+    }
     const source = readFileSync(join(cwd, "node_modules/node-forge/lib/rsa.js"), "utf8");
     return (
-      source.includes("obj.value.length !== 2 ||") &&
-      source.includes("obj.value[0].value.length !== (('parameters' in capture) ? 2 : 1)")
+      source.includes("obj.value.length !== 2)") &&
+      source.includes("var withParameters = _encodeDigestInfo(oid, capture.digest, true);") &&
+      source.includes("var withoutParameters =") &&
+      source.includes("d.substring(0, withParameters.length) !== withParameters")
     );
   } catch {
     return false;
@@ -316,11 +324,11 @@ export async function auditWorkspace(
   ws: Workspace,
   runAudit: (workspace: Workspace) => BunAuditResult = runBunAuditAttempt
 ): Promise<AuditOutcome> {
-  if (ws.label === "mobile" && !hasVerifiedSignatureParserPatch(ws.cwd)) {
+  if (ws.label === "mobile" && !hasVerifiedSignatureParserFix(ws.cwd)) {
     return {
       status: "failed",
       source: "bun-audit",
-      detail: "signature parser security patch is missing or invalid",
+      detail: "signature parser security fix is missing or invalid",
     };
   }
   if (ws.label === "mobile" && !hasVerifiedDeepmergeProtoPatch(ws.cwd)) {
@@ -332,7 +340,6 @@ export async function auditWorkspace(
   }
   const workspaceIgnored = new Set(ws.ignored);
   if (ws.label === "mobile") {
-    workspaceIgnored.add("GHSA-86w9-cpqp-85rv");
     workspaceIgnored.add("GHSA-gcqx-w48m-w2h4");
   }
   if (ws.label === "root" || ws.label === "mobile") {
