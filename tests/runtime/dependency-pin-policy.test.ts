@@ -63,7 +63,7 @@ describe("JavaScript dependency pin policy", () => {
 
   test("lockfiles resolve the patched brace-expansion and ip-address releases", () => {
     const expected: Array<{ directory: string; braceExpansion: string; vulnerable: string[] }> = [
-      { directory: "", braceExpansion: "1.1.21", vulnerable: ["1.1.18", "5.0.9"] },
+      { directory: "", braceExpansion: "5.0.12", vulnerable: ["1.1.18", "5.0.9", "1.1.21"] },
       { directory: "ui/", braceExpansion: "5.0.12", vulnerable: ["5.0.9"] },
       { directory: "apps/mobile/", braceExpansion: "5.0.12", vulnerable: ["5.0.9"] },
     ];
